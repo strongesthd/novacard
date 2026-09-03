@@ -1,0 +1,105 @@
+﻿
+CÔNG TY CỔ PHẦN CÔNG NGHỆ NOVATECH
+Số: 09/KH-NOVATECH
+Hải Phòng, ngày 03 tháng 09 năm 2026
+KẾ HOẠCH PHÁT TRIỂN VÀ TRIỂN KHAI NỀN TẢNG DANH THIẾP ĐIỆN TỬ VÀ HỆ SINH THÁI KẾT NỐI B2B THÔNG MINH (NOVACARD)
+I. CĂN CỨ VÀ BỐI CẢNH XÂY DỰNG KẾ HOẠCH
+Trong kỷ nguyên chuyển đổi số và hội nhập kinh tế quốc tế sâu rộng, các phương thức giao tiếp thương mại truyền thống đang bộc lộ nhiều hạn chế về mặt lưu trữ dữ liệu, cập nhật thông tin và tối ưu hóa thời gian kết nối. Hoạt động xúc tiến thương mại, gặp gỡ đối tác ngoại giao cũng như các sự kiện kết nối doanh nghiệp đòi hỏi một giải pháp công nghệ vừa mang tính trang trọng, vừa tối ưu hóa năng lực tác nghiệp và mở rộng mạng lưới giao thương thực chất.
+Xuất phát từ định hướng chiến lược của Công ty Cổ phần Công nghệ Novatech trong việc tiên phong phát triển các giải pháp tự động hóa, trí tuệ nhân tạo và hệ sinh thái số hóa phục vụ cộng đồng doanh nghiệp, kế hoạch phát triển nền tảng NovaCard được xây dựng nhằm chuẩn hóa công cụ giao tiếp số, tích hợp trợ lý AI thông minh và thiết lập mạng lưới cộng đồng giao thương đa tầng chuyên nghiệp.
+II. MỤC TIÊU CHIẾN LƯỢC
+1. Mục tiêu tổng quát
+Xây dựng NovaCard trở thành nền tảng định danh số và mạng lưới kết nối B2B (B2B Networking Platform) thế hệ mới, tích hợp công nghệ trí tuệ nhân tạo (AI), ví điện tử di động và cộng đồng ngành nghề chuyên sâu; từng bước thay thế hoàn toàn danh thiếp giấy truyền thống và tạo lập kênh giao thương khép kín, an toàn và hiệu quả.
+2. Mục tiêu cụ thể
+Giai đoạn 1 (Số hóa và Trải nghiệm 1 chạm): Hoàn thiện phiên bản MVP danh thiếp điện tử trong vòng 04 tuần. Đạt tỷ lệ lưu trữ danh bạ thành công 100% chỉ qua 01 chạm (vCard động) mà không yêu cầu đối tác phải cài đặt ứng dụng trung gian.
+Giai đoạn 2 (Tích hợp Trợ lý AI và Kết nối thông minh): Tích hợp module AI OCR bóc tách danh thiếp giấy đa ngôn ngữ (Việt - Anh - Hàn), trợ lý ảo AI tự động gợi ý chủ đề phá băng (Ice-breaking) dựa trên điểm chung sở thích và nhu cầu kinh doanh.
+Giai đoạn 3 (Thiết lập Cộng đồng và Khai thác dữ liệu): Xây dựng mạng lưới cộng đồng doanh nhân đa tầng, triển khai công cụ kết nối B2B tự động (Matchmaking) và phân vùng kết nối phong cách sống/hẹn hò doanh nhân văn minh (NovaSoul).
+III. PHẠM VI VÀ ĐỐI TƯỢNG ÁP DỤNG
+Phạm vi triển khai: Khối nội bộ cán bộ nhân viên Novatech, các hội đồng doanh nghiệp, hiệp hội doanh nhân trẻ khu vực Hải Phòng - Hải Dương và các đoàn đại biểu xúc tiến thương mại quốc tế.
+Đối tượng áp dụng: Lãnh đạo cấp cao, giám đốc điều hành, đội ngũ kinh doanh B2B, chuyên gia công nghệ và các đối tác thương mại song phương.
+IV. ĐỊNH HƯỚNG KIẾN TRÚC VÀ CÁC MODULE CHỨC NĂNG CỐT LÕI
+Module Chức năng
+Mô tả Kỹ thuật và Nghiệp vụ
+Giá trị Mang lại
+ 
+1. Dynamic Digital Profile (Hồ sơ Số động)
+Giao diện Mobile-first chuẩn nhận diện thương hiệu công nghệ.
+Tích hợp các nút hành động nhanh: Gọi điện thoại, gửi email, nhắn tin Zalo/WhatsApp, xem catalogue/hồ sơ năng lực (PDF trên cloud).
+Nút tải file danh bạ chuẩn vCard (.vcf) đồng bộ 1 chạm vào danh bạ điện thoại máy nhận.
+Loại bỏ chi phí in ấn thẻ giấy, cho phép nhân sự tự cập nhật thông tin tức thời mà không làm thay đổi đường dẫn hay mã QR.
+2. Hybrid Wallet Pass & Dynamic QR
+Tạo vé danh thiếp số lưu trữ trực tiếp trên Apple Wallet và Google Wallet.
+Khai thác cơ chế chia sẻ không dây, quét mã QR động hoặc chạm NFC thẻ cứng đối với các lãnh đạo ngoại giao.
+Mã QR động trỏ về Mini-site cá nhân, không bị khóa cứng nội dung.
+Tạo phong thái ngoại giao đẳng cấp, thao tác trong 1 giây mà không bắt buộc đối tác cài thêm ứng dụng lạ.
+3. AI OCR & Làm giàu dữ liệu (Data Enrichment)
+Tích hợp mô hình thị giác máy tính và OCR nhận diện danh thiếp giấy đa ngôn ngữ (tiếng Việt, tiếng Anh, tiếng Hàn).
+Tự động bóc tách họ tên, chức danh, số điện thoại, phân loại vào sổ danh bạ thông minh.
+Gợi ý làm giàu dữ liệu từ các nền tảng công khai của doanh nghiệp.
+Giải quyết điểm nghẽn quản trị danh bạ sau các hội thảo, triển lãm thương mại đông người.
+4. Trợ lý AI B2B & Gợi ý Điểm chung
+Hệ thống phân tích điểm chung về sở thích (Golf, công nghệ, sách, khởi nghiệp) và ngành nghề giữa 2 profile khi chạm nhau.
+Gợi ý các câu mở đầu hội thoại (Ice-breaking) phù hợp văn hóa kinh doanh.
+Trợ lý ảo nhắc lịch chăm sóc (Follow-up) sau 48 - 72 giờ kèm mẫu thư ngỏ chuyên nghiệp.
+Rút ngắn khoảng cách ban đầu giữa các doanh nhân, tăng tỷ lệ chuyển đổi từ quen biết xã giao sang hợp tác thực chất.
+5. Mạng lưới Cộng đồng Đa tầng (Multi-layer Hub)
+Tầng 1: Cộng đồng Novatech & Đối tác chính danh.
+Tầng 2: Diễn đàn chuyên sâu theo ngành nghề (AI/IoT, cơ khí chế tạo, phụ trợ, logistics).
+Tầng 3: Câu lạc bộ sở thích & phong cách sống (Golf, đầu tư, thể thao).
+Tầng 4 (NovaSoul): Phân vùng kết nối bạn khác giới độc thân dành riêng cho doanh nhân, hoạt động theo cơ chế bảo mật nghiêm ngặt và sự đồng thuận hai chiều.
+Tạo lập hệ sinh thái gắn kết người dùng bền vững, duy trì tần suất mở ứng dụng hàng ngày và tạo nguồn dữ liệu B2B chất lượng cao.
+V. LỘ TRÌNH VÀ TRÌNH TỰ TRIỂN KHAI CHI TIẾT
+Giai đoạn
+Thời gian thực hiện
+Nội dung Công việc Trọng tâm
+Sản phẩm Đầu ra
+ 
+Giai đoạn 1
+Tuần 01 – Tuần 04
+Khảo sát yêu cầu người dùng và thiết kế UI/UX Mini-site chuẩn Mobile.
+Xây dựng cơ sở dữ liệu hồ sơ cá nhân và module tạo file .vcf động.
+Thiết lập công cụ tạo Dynamic QR Code gắn logo thương hiệu.
+Thử nghiệm nội bộ cấp quản lý tại văn phòng Novatech.
+Bản MVP hoạt động ổn định trên nền tảng Web/Mini-site; bộ thẻ demo cấp quản lý.
+Giai đoạn 2
+Tuần 05 – Tuần 08
+Tích hợp API tạo thẻ Pass trên Apple Wallet và Google Wallet.
+Nghiên cứu cơ chế truyền dữ liệu qua Wallet và chạm NFC đối với thẻ vật lý.
+Tối ưu hóa tốc độ tải trang dưới 1,5 giây trên mạng 4G/5G.
+Tính năng Thêm vào Ví (Add to Wallet) hoàn thiện; tài liệu hướng dẫn sử dụng 1 chạm.
+Giai đoạn 3
+Tuần 09 – Tuần 14
+Huấn luyện và nhúng engine AI OCR quét danh thiếp giấy đa ngôn ngữ.
+Xây dựng trang cá nhân hóa sở thích và bộ gợi ý Ice-breaking thông minh.
+Phát triển Chatbot AI tư vấn và tra cứu đối tác B2B sơ bộ.
+Tính năng Scan danh thiếp bằng AI; Chatbot trợ lý đối ngoại tích hợp trên Mini App.
+Giai đoạn 4
+Tuần 15 – Tuần 20
+Hoàn thiện phân hệ Cộng đồng đa tầng và công cụ kiểm duyệt tự động (AI Moderator).
+Đóng gói và triển khai phân vùng kết nối riêng tư NovaSoul.
+Tổ chức đánh giá an toàn thông tin, bảo mật dữ liệu người dùng.
+Phát hành chính thức và đào tạo sử dụng cho các đoàn hội doanh nghiệp.
+Hệ sinh thái NovaCard hoàn chỉnh; báo cáo nghiệm thu kỹ thuật và kế hoạch thương mại hóa.
+VI. DỰ TRÙ NGUỒN LỰC VÀ PHÂN CÔNG TRÁCH NHIỆM
+Khối Kỹ thuật & Phát triển Sản phẩm (R&D / Dev Team): Chịu trách nhiệm thiết kế hệ thống, lập trình backend/frontend mini app, tích hợp API Apple/Google Wallet và huấn luyện các mô hình trí tuệ nhân tạo (OCR, Chatbot, AI Matching).
+Khối Thiết kế UI/UX & Thương hiệu: Chịu trách nhiệm quy chuẩn bộ nhận diện NovaCard, thiết kế giao diện danh thiếp số sang trọng, hiện đại, bảo đảm tính nhất quán với thương hiệu mẹ Novatech.
+Khối Vận hành & Phát triển Thị trường: Xây dựng quy chế cộng đồng, nội dung truyền thông, hướng dẫn sử dụng cho hội đồng doanh nghiệp và chuẩn bị phương án chăm sóc đối tác.
+Ban Pháp chế & Bảo mật: Thẩm định chính sách quyền riêng tư (Privacy Policy), mã hóa dữ liệu cá nhân, thiết lập thỏa thuận người dùng nhằm đảm bảo tuân thủ đầy đủ quy định pháp luật về an toàn an ninh mạng.
+VII. BIỆN PHÁP QUẢN TRỊ RỦI RO
+Rủi ro phân mảnh thiết bị di động: Giải quyết bằng cách lấy Web chuẩn Responsive Mobile làm nền tảng cốt lõi, phối hợp song song mã QR động và thẻ Pass trên Ví để máy nào cũng tương tác được.
+Rủi ro rò rỉ dữ liệu và làm loãng thương hiệu: Tách biệt tuyệt đối giữa hồ sơ doanh nghiệp B2B và phân vùng kết nối cá nhân (NovaSoul). Phân vùng hẹn hò/lối sống chỉ hiển thị khi người dùng chủ động bật chế độ riêng tư và xác thực danh tính.
+Rủi ro nội dung rác trên cộng đồng: Ứng dụng công nghệ AI Moderator tự động quét và lọc các nội dung quảng cáo sai quy định, spam hoặc vi phạm chuẩn mực văn hóa giao thương.
+VIII. KIẾN NGHỊ VÀ TỔ CHỨC THỰC HIỆN
+Kính đề nghị Ban Giám đốc và Hội đồng Quản trị phê duyệt chủ trương triển khai kế hoạch phát triển nền tảng NovaCard theo các giai đoạn nêu trên. Sau khi kế hoạch được thông qua, đội ngũ kỹ thuật sẽ lập tức khởi tạo dự án, phân rã công việc chi tiết (Sprint backlog) và báo cáo tiến độ định kỳ hàng tuần.
+
+
+Nơi nhận:
+- Ban Giám đốc Novatech (để chỉ đạo);
+- Đội ngũ Lập trình & Kỹ thuật (để thực hiện);
+- Lưu: VT, R&D.
+
+TM. BAN ĐIỀU HÀNH DỰ ÁN
+(Ký và ghi rõ họ tên)
+
+
+
+

@@ -1,0 +1,1 @@
+{"name":"@novacard/shared","private":true,"scripts":{"build":"tsc --noEmit","lint":"tsc --noEmit","typecheck":"tsc --noEmit","test":"node -e \"console.log('shared smoke ok')\""},"devDependencies":{"typescript":"^5.8.3"}}

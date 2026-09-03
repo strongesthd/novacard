@@ -1,0 +1,6 @@
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+generator client { provider = "prisma-client-js" }
+model User { id String @id @default(cuid()); email String @unique; createdAt DateTime @default(now()); profiles Profile[] }
+model Organization { id String @id @default(cuid()); name String; profiles Profile[] }
+model Profile { id String @id @default(cuid()); slug String @unique; displayName String; userId String; user User @relation(fields:[userId], references:[id]); organizationId String?; organization Organization? @relation(fields:[organizationId], references:[id]); createdAt DateTime @default(now()) }
+// NovaSoulProfile and NovaSoulConnection are isolated in a separate bounded context/schema.

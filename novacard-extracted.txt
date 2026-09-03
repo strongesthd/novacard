@@ -1,0 +1,104 @@
+﻿
+CÃ”NG TY Cá»” PHáº¦N CÃ”NG NGHá»† NOVATECH
+Sá»‘: 09/KH-NOVATECH
+Háº£i PhÃ²ng, ngÃ y 03 thÃ¡ng 09 nÄƒm 2026
+Káº¾ HOáº CH PHÃT TRIá»‚N VÃ€ TRIá»‚N KHAI Ná»€N Táº¢NG DANH THIáº¾P ÄIá»†N Tá»¬ VÃ€ Há»† SINH THÃI Káº¾T Ná»I B2B THÃ”NG MINH (NOVACARD)
+I. CÄ‚N Cá»¨ VÃ€ Bá»I Cáº¢NH XÃ‚Y Dá»°NG Káº¾ HOáº CH
+Trong ká»· nguyÃªn chuyá»ƒn Ä‘á»•i sá»‘ vÃ  há»™i nháº­p kinh táº¿ quá»‘c táº¿ sÃ¢u rá»™ng, cÃ¡c phÆ°Æ¡ng thá»©c giao tiáº¿p thÆ°Æ¡ng máº¡i truyá»n thá»‘ng Ä‘ang bá»™c lá»™ nhiá»u háº¡n cháº¿ vá» máº·t lÆ°u trá»¯ dá»¯ liá»‡u, cáº­p nháº­t thÃ´ng tin vÃ  tá»‘i Æ°u hÃ³a thá»i gian káº¿t ná»‘i. Hoáº¡t Ä‘á»™ng xÃºc tiáº¿n thÆ°Æ¡ng máº¡i, gáº·p gá»¡ Ä‘á»‘i tÃ¡c ngoáº¡i giao cÅ©ng nhÆ° cÃ¡c sá»± kiá»‡n káº¿t ná»‘i doanh nghiá»‡p Ä‘Ã²i há»i má»™t giáº£i phÃ¡p cÃ´ng nghá»‡ vá»«a mang tÃ­nh trang trá»ng, vá»«a tá»‘i Æ°u hÃ³a nÄƒng lá»±c tÃ¡c nghiá»‡p vÃ  má»Ÿ rá»™ng máº¡ng lÆ°á»›i giao thÆ°Æ¡ng thá»±c cháº¥t.
+Xuáº¥t phÃ¡t tá»« Ä‘á»‹nh hÆ°á»›ng chiáº¿n lÆ°á»£c cá»§a CÃ´ng ty Cá»• pháº§n CÃ´ng nghá»‡ Novatech trong viá»‡c tiÃªn phong phÃ¡t triá»ƒn cÃ¡c giáº£i phÃ¡p tá»± Ä‘á»™ng hÃ³a, trÃ­ tuá»‡ nhÃ¢n táº¡o vÃ  há»‡ sinh thÃ¡i sá»‘ hÃ³a phá»¥c vá»¥ cá»™ng Ä‘á»“ng doanh nghiá»‡p, káº¿ hoáº¡ch phÃ¡t triá»ƒn ná»n táº£ng NovaCard Ä‘Æ°á»£c xÃ¢y dá»±ng nháº±m chuáº©n hÃ³a cÃ´ng cá»¥ giao tiáº¿p sá»‘, tÃ­ch há»£p trá»£ lÃ½ AI thÃ´ng minh vÃ  thiáº¿t láº­p máº¡ng lÆ°á»›i cá»™ng Ä‘á»“ng giao thÆ°Æ¡ng Ä‘a táº§ng chuyÃªn nghiá»‡p.
+II. Má»¤C TIÃŠU CHIáº¾N LÆ¯á»¢C
+1. Má»¥c tiÃªu tá»•ng quÃ¡t
+XÃ¢y dá»±ng NovaCard trá»Ÿ thÃ nh ná»n táº£ng Ä‘á»‹nh danh sá»‘ vÃ  máº¡ng lÆ°á»›i káº¿t ná»‘i B2B (B2B Networking Platform) tháº¿ há»‡ má»›i, tÃ­ch há»£p cÃ´ng nghá»‡ trÃ­ tuá»‡ nhÃ¢n táº¡o (AI), vÃ­ Ä‘iá»‡n tá»­ di Ä‘á»™ng vÃ  cá»™ng Ä‘á»“ng ngÃ nh nghá» chuyÃªn sÃ¢u; tá»«ng bÆ°á»›c thay tháº¿ hoÃ n toÃ n danh thiáº¿p giáº¥y truyá»n thá»‘ng vÃ  táº¡o láº­p kÃªnh giao thÆ°Æ¡ng khÃ©p kÃ­n, an toÃ n vÃ  hiá»‡u quáº£.
+2. Má»¥c tiÃªu cá»¥ thá»ƒ
+Giai Ä‘oáº¡n 1 (Sá»‘ hÃ³a vÃ  Tráº£i nghiá»‡m 1 cháº¡m): HoÃ n thiá»‡n phiÃªn báº£n MVP danh thiáº¿p Ä‘iá»‡n tá»­ trong vÃ²ng 04 tuáº§n. Äáº¡t tá»· lá»‡ lÆ°u trá»¯ danh báº¡ thÃ nh cÃ´ng 100% chá»‰ qua 01 cháº¡m (vCard Ä‘á»™ng) mÃ  khÃ´ng yÃªu cáº§u Ä‘á»‘i tÃ¡c pháº£i cÃ i Ä‘áº·t á»©ng dá»¥ng trung gian.
+Giai Ä‘oáº¡n 2 (TÃ­ch há»£p Trá»£ lÃ½ AI vÃ  Káº¿t ná»‘i thÃ´ng minh): TÃ­ch há»£p module AI OCR bÃ³c tÃ¡ch danh thiáº¿p giáº¥y Ä‘a ngÃ´n ngá»¯ (Viá»‡t - Anh - HÃ n), trá»£ lÃ½ áº£o AI tá»± Ä‘á»™ng gá»£i Ã½ chá»§ Ä‘á» phÃ¡ bÄƒng (Ice-breaking) dá»±a trÃªn Ä‘iá»ƒm chung sá»Ÿ thÃ­ch vÃ  nhu cáº§u kinh doanh.
+Giai Ä‘oáº¡n 3 (Thiáº¿t láº­p Cá»™ng Ä‘á»“ng vÃ  Khai thÃ¡c dá»¯ liá»‡u): XÃ¢y dá»±ng máº¡ng lÆ°á»›i cá»™ng Ä‘á»“ng doanh nhÃ¢n Ä‘a táº§ng, triá»ƒn khai cÃ´ng cá»¥ káº¿t ná»‘i B2B tá»± Ä‘á»™ng (Matchmaking) vÃ  phÃ¢n vÃ¹ng káº¿t ná»‘i phong cÃ¡ch sá»‘ng/háº¹n hÃ² doanh nhÃ¢n vÄƒn minh (NovaSoul).
+III. PHáº M VI VÃ€ Äá»I TÆ¯á»¢NG ÃP Dá»¤NG
+Pháº¡m vi triá»ƒn khai: Khá»‘i ná»™i bá»™ cÃ¡n bá»™ nhÃ¢n viÃªn Novatech, cÃ¡c há»™i Ä‘á»“ng doanh nghiá»‡p, hiá»‡p há»™i doanh nhÃ¢n tráº» khu vá»±c Háº£i PhÃ²ng - Háº£i DÆ°Æ¡ng vÃ  cÃ¡c Ä‘oÃ n Ä‘áº¡i biá»ƒu xÃºc tiáº¿n thÆ°Æ¡ng máº¡i quá»‘c táº¿.
+Äá»‘i tÆ°á»£ng Ã¡p dá»¥ng: LÃ£nh Ä‘áº¡o cáº¥p cao, giÃ¡m Ä‘á»‘c Ä‘iá»u hÃ nh, Ä‘á»™i ngÅ© kinh doanh B2B, chuyÃªn gia cÃ´ng nghá»‡ vÃ  cÃ¡c Ä‘á»‘i tÃ¡c thÆ°Æ¡ng máº¡i song phÆ°Æ¡ng.
+IV. Äá»ŠNH HÆ¯á»šNG KIáº¾N TRÃšC VÃ€ CÃC MODULE CHá»¨C NÄ‚NG Cá»T LÃ•I
+Module Chá»©c nÄƒng
+MÃ´ táº£ Ká»¹ thuáº­t vÃ  Nghiá»‡p vá»¥
+GiÃ¡ trá»‹ Mang láº¡i
+ 
+1. Dynamic Digital Profile (Há»“ sÆ¡ Sá»‘ Ä‘á»™ng)
+Giao diá»‡n Mobile-first chuáº©n nháº­n diá»‡n thÆ°Æ¡ng hiá»‡u cÃ´ng nghá»‡.
+TÃ­ch há»£p cÃ¡c nÃºt hÃ nh Ä‘á»™ng nhanh: Gá»i Ä‘iá»‡n thoáº¡i, gá»­i email, nháº¯n tin Zalo/WhatsApp, xem catalogue/há»“ sÆ¡ nÄƒng lá»±c (PDF trÃªn cloud).
+NÃºt táº£i file danh báº¡ chuáº©n vCard (.vcf) Ä‘á»“ng bá»™ 1 cháº¡m vÃ o danh báº¡ Ä‘iá»‡n thoáº¡i mÃ¡y nháº­n.
+Loáº¡i bá» chi phÃ­ in áº¥n tháº» giáº¥y, cho phÃ©p nhÃ¢n sá»± tá»± cáº­p nháº­t thÃ´ng tin tá»©c thá»i mÃ  khÃ´ng lÃ m thay Ä‘á»•i Ä‘Æ°á»ng dáº«n hay mÃ£ QR.
+2. Hybrid Wallet Pass & Dynamic QR
+Táº¡o vÃ© danh thiáº¿p sá»‘ lÆ°u trá»¯ trá»±c tiáº¿p trÃªn Apple Wallet vÃ  Google Wallet.
+Khai thÃ¡c cÆ¡ cháº¿ chia sáº» khÃ´ng dÃ¢y, quÃ©t mÃ£ QR Ä‘á»™ng hoáº·c cháº¡m NFC tháº» cá»©ng Ä‘á»‘i vá»›i cÃ¡c lÃ£nh Ä‘áº¡o ngoáº¡i giao.
+MÃ£ QR Ä‘á»™ng trá» vá» Mini-site cÃ¡ nhÃ¢n, khÃ´ng bá»‹ khÃ³a cá»©ng ná»™i dung.
+Táº¡o phong thÃ¡i ngoáº¡i giao Ä‘áº³ng cáº¥p, thao tÃ¡c trong 1 giÃ¢y mÃ  khÃ´ng báº¯t buá»™c Ä‘á»‘i tÃ¡c cÃ i thÃªm á»©ng dá»¥ng láº¡.
+3. AI OCR & LÃ m giÃ u dá»¯ liá»‡u (Data Enrichment)
+TÃ­ch há»£p mÃ´ hÃ¬nh thá»‹ giÃ¡c mÃ¡y tÃ­nh vÃ  OCR nháº­n diá»‡n danh thiáº¿p giáº¥y Ä‘a ngÃ´n ngá»¯ (tiáº¿ng Viá»‡t, tiáº¿ng Anh, tiáº¿ng HÃ n).
+Tá»± Ä‘á»™ng bÃ³c tÃ¡ch há» tÃªn, chá»©c danh, sá»‘ Ä‘iá»‡n thoáº¡i, phÃ¢n loáº¡i vÃ o sá»• danh báº¡ thÃ´ng minh.
+Gá»£i Ã½ lÃ m giÃ u dá»¯ liá»‡u tá»« cÃ¡c ná»n táº£ng cÃ´ng khai cá»§a doanh nghiá»‡p.
+Giáº£i quyáº¿t Ä‘iá»ƒm ngháº½n quáº£n trá»‹ danh báº¡ sau cÃ¡c há»™i tháº£o, triá»ƒn lÃ£m thÆ°Æ¡ng máº¡i Ä‘Ã´ng ngÆ°á»i.
+4. Trá»£ lÃ½ AI B2B & Gá»£i Ã½ Äiá»ƒm chung
+Há»‡ thá»‘ng phÃ¢n tÃ­ch Ä‘iá»ƒm chung vá» sá»Ÿ thÃ­ch (Golf, cÃ´ng nghá»‡, sÃ¡ch, khá»Ÿi nghiá»‡p) vÃ  ngÃ nh nghá» giá»¯a 2 profile khi cháº¡m nhau.
+Gá»£i Ã½ cÃ¡c cÃ¢u má»Ÿ Ä‘áº§u há»™i thoáº¡i (Ice-breaking) phÃ¹ há»£p vÄƒn hÃ³a kinh doanh.
+Trá»£ lÃ½ áº£o nháº¯c lá»‹ch chÄƒm sÃ³c (Follow-up) sau 48 - 72 giá» kÃ¨m máº«u thÆ° ngá» chuyÃªn nghiá»‡p.
+RÃºt ngáº¯n khoáº£ng cÃ¡ch ban Ä‘áº§u giá»¯a cÃ¡c doanh nhÃ¢n, tÄƒng tá»· lá»‡ chuyá»ƒn Ä‘á»•i tá»« quen biáº¿t xÃ£ giao sang há»£p tÃ¡c thá»±c cháº¥t.
+5. Máº¡ng lÆ°á»›i Cá»™ng Ä‘á»“ng Äa táº§ng (Multi-layer Hub)
+Táº§ng 1: Cá»™ng Ä‘á»“ng Novatech & Äá»‘i tÃ¡c chÃ­nh danh.
+Táº§ng 2: Diá»…n Ä‘Ã n chuyÃªn sÃ¢u theo ngÃ nh nghá» (AI/IoT, cÆ¡ khÃ­ cháº¿ táº¡o, phá»¥ trá»£, logistics).
+Táº§ng 3: CÃ¢u láº¡c bá»™ sá»Ÿ thÃ­ch & phong cÃ¡ch sá»‘ng (Golf, Ä‘áº§u tÆ°, thá»ƒ thao).
+Táº§ng 4 (NovaSoul): PhÃ¢n vÃ¹ng káº¿t ná»‘i báº¡n khÃ¡c giá»›i Ä‘á»™c thÃ¢n dÃ nh riÃªng cho doanh nhÃ¢n, hoáº¡t Ä‘á»™ng theo cÆ¡ cháº¿ báº£o máº­t nghiÃªm ngáº·t vÃ  sá»± Ä‘á»“ng thuáº­n hai chiá»u.
+Táº¡o láº­p há»‡ sinh thÃ¡i gáº¯n káº¿t ngÆ°á»i dÃ¹ng bá»n vá»¯ng, duy trÃ¬ táº§n suáº¥t má»Ÿ á»©ng dá»¥ng hÃ ng ngÃ y vÃ  táº¡o nguá»“n dá»¯ liá»‡u B2B cháº¥t lÆ°á»£ng cao.
+V. Lá»˜ TRÃŒNH VÃ€ TRÃŒNH Tá»° TRIá»‚N KHAI CHI TIáº¾T
+Giai Ä‘oáº¡n
+Thá»i gian thá»±c hiá»‡n
+Ná»™i dung CÃ´ng viá»‡c Trá»ng tÃ¢m
+Sáº£n pháº©m Äáº§u ra
+ 
+Giai Ä‘oáº¡n 1
+Tuáº§n 01 â€“ Tuáº§n 04
+Kháº£o sÃ¡t yÃªu cáº§u ngÆ°á»i dÃ¹ng vÃ  thiáº¿t káº¿ UI/UX Mini-site chuáº©n Mobile.
+XÃ¢y dá»±ng cÆ¡ sá»Ÿ dá»¯ liá»‡u há»“ sÆ¡ cÃ¡ nhÃ¢n vÃ  module táº¡o file .vcf Ä‘á»™ng.
+Thiáº¿t láº­p cÃ´ng cá»¥ táº¡o Dynamic QR Code gáº¯n logo thÆ°Æ¡ng hiá»‡u.
+Thá»­ nghiá»‡m ná»™i bá»™ cáº¥p quáº£n lÃ½ táº¡i vÄƒn phÃ²ng Novatech.
+Báº£n MVP hoáº¡t Ä‘á»™ng á»•n Ä‘á»‹nh trÃªn ná»n táº£ng Web/Mini-site; bá»™ tháº» demo cáº¥p quáº£n lÃ½.
+Giai Ä‘oáº¡n 2
+Tuáº§n 05 â€“ Tuáº§n 08
+TÃ­ch há»£p API táº¡o tháº» Pass trÃªn Apple Wallet vÃ  Google Wallet.
+NghiÃªn cá»©u cÆ¡ cháº¿ truyá»n dá»¯ liá»‡u qua Wallet vÃ  cháº¡m NFC Ä‘á»‘i vá»›i tháº» váº­t lÃ½.
+Tá»‘i Æ°u hÃ³a tá»‘c Ä‘á»™ táº£i trang dÆ°á»›i 1,5 giÃ¢y trÃªn máº¡ng 4G/5G.
+TÃ­nh nÄƒng ThÃªm vÃ o VÃ­ (Add to Wallet) hoÃ n thiá»‡n; tÃ i liá»‡u hÆ°á»›ng dáº«n sá»­ dá»¥ng 1 cháº¡m.
+Giai Ä‘oáº¡n 3
+Tuáº§n 09 â€“ Tuáº§n 14
+Huáº¥n luyá»‡n vÃ  nhÃºng engine AI OCR quÃ©t danh thiáº¿p giáº¥y Ä‘a ngÃ´n ngá»¯.
+XÃ¢y dá»±ng trang cÃ¡ nhÃ¢n hÃ³a sá»Ÿ thÃ­ch vÃ  bá»™ gá»£i Ã½ Ice-breaking thÃ´ng minh.
+PhÃ¡t triá»ƒn Chatbot AI tÆ° váº¥n vÃ  tra cá»©u Ä‘á»‘i tÃ¡c B2B sÆ¡ bá»™.
+TÃ­nh nÄƒng Scan danh thiáº¿p báº±ng AI; Chatbot trá»£ lÃ½ Ä‘á»‘i ngoáº¡i tÃ­ch há»£p trÃªn Mini App.
+Giai Ä‘oáº¡n 4
+Tuáº§n 15 â€“ Tuáº§n 20
+HoÃ n thiá»‡n phÃ¢n há»‡ Cá»™ng Ä‘á»“ng Ä‘a táº§ng vÃ  cÃ´ng cá»¥ kiá»ƒm duyá»‡t tá»± Ä‘á»™ng (AI Moderator).
+ÄÃ³ng gÃ³i vÃ  triá»ƒn khai phÃ¢n vÃ¹ng káº¿t ná»‘i riÃªng tÆ° NovaSoul.
+Tá»• chá»©c Ä‘Ã¡nh giÃ¡ an toÃ n thÃ´ng tin, báº£o máº­t dá»¯ liá»‡u ngÆ°á»i dÃ¹ng.
+PhÃ¡t hÃ nh chÃ­nh thá»©c vÃ  Ä‘Ã o táº¡o sá»­ dá»¥ng cho cÃ¡c Ä‘oÃ n há»™i doanh nghiá»‡p.
+Há»‡ sinh thÃ¡i NovaCard hoÃ n chá»‰nh; bÃ¡o cÃ¡o nghiá»‡m thu ká»¹ thuáº­t vÃ  káº¿ hoáº¡ch thÆ°Æ¡ng máº¡i hÃ³a.
+VI. Dá»° TRÃ™ NGUá»’N Lá»°C VÃ€ PHÃ‚N CÃ”NG TRÃCH NHIá»†M
+Khá»‘i Ká»¹ thuáº­t & PhÃ¡t triá»ƒn Sáº£n pháº©m (R&D / Dev Team): Chá»‹u trÃ¡ch nhiá»‡m thiáº¿t káº¿ há»‡ thá»‘ng, láº­p trÃ¬nh backend/frontend mini app, tÃ­ch há»£p API Apple/Google Wallet vÃ  huáº¥n luyá»‡n cÃ¡c mÃ´ hÃ¬nh trÃ­ tuá»‡ nhÃ¢n táº¡o (OCR, Chatbot, AI Matching).
+Khá»‘i Thiáº¿t káº¿ UI/UX & ThÆ°Æ¡ng hiá»‡u: Chá»‹u trÃ¡ch nhiá»‡m quy chuáº©n bá»™ nháº­n diá»‡n NovaCard, thiáº¿t káº¿ giao diá»‡n danh thiáº¿p sá»‘ sang trá»ng, hiá»‡n Ä‘áº¡i, báº£o Ä‘áº£m tÃ­nh nháº¥t quÃ¡n vá»›i thÆ°Æ¡ng hiá»‡u máº¹ Novatech.
+Khá»‘i Váº­n hÃ nh & PhÃ¡t triá»ƒn Thá»‹ trÆ°á»ng: XÃ¢y dá»±ng quy cháº¿ cá»™ng Ä‘á»“ng, ná»™i dung truyá»n thÃ´ng, hÆ°á»›ng dáº«n sá»­ dá»¥ng cho há»™i Ä‘á»“ng doanh nghiá»‡p vÃ  chuáº©n bá»‹ phÆ°Æ¡ng Ã¡n chÄƒm sÃ³c Ä‘á»‘i tÃ¡c.
+Ban PhÃ¡p cháº¿ & Báº£o máº­t: Tháº©m Ä‘á»‹nh chÃ­nh sÃ¡ch quyá»n riÃªng tÆ° (Privacy Policy), mÃ£ hÃ³a dá»¯ liá»‡u cÃ¡ nhÃ¢n, thiáº¿t láº­p thá»a thuáº­n ngÆ°á»i dÃ¹ng nháº±m Ä‘áº£m báº£o tuÃ¢n thá»§ Ä‘áº§y Ä‘á»§ quy Ä‘á»‹nh phÃ¡p luáº­t vá» an toÃ n an ninh máº¡ng.
+VII. BIá»†N PHÃP QUáº¢N TRá»Š Rá»¦I RO
+Rá»§i ro phÃ¢n máº£nh thiáº¿t bá»‹ di Ä‘á»™ng: Giáº£i quyáº¿t báº±ng cÃ¡ch láº¥y Web chuáº©n Responsive Mobile lÃ m ná»n táº£ng cá»‘t lÃµi, phá»‘i há»£p song song mÃ£ QR Ä‘á»™ng vÃ  tháº» Pass trÃªn VÃ­ Ä‘á»ƒ mÃ¡y nÃ o cÅ©ng tÆ°Æ¡ng tÃ¡c Ä‘Æ°á»£c.
+Rá»§i ro rÃ² rá»‰ dá»¯ liá»‡u vÃ  lÃ m loÃ£ng thÆ°Æ¡ng hiá»‡u: TÃ¡ch biá»‡t tuyá»‡t Ä‘á»‘i giá»¯a há»“ sÆ¡ doanh nghiá»‡p B2B vÃ  phÃ¢n vÃ¹ng káº¿t ná»‘i cÃ¡ nhÃ¢n (NovaSoul). PhÃ¢n vÃ¹ng háº¹n hÃ²/lá»‘i sá»‘ng chá»‰ hiá»ƒn thá»‹ khi ngÆ°á»i dÃ¹ng chá»§ Ä‘á»™ng báº­t cháº¿ Ä‘á»™ riÃªng tÆ° vÃ  xÃ¡c thá»±c danh tÃ­nh.
+Rá»§i ro ná»™i dung rÃ¡c trÃªn cá»™ng Ä‘á»“ng: á»¨ng dá»¥ng cÃ´ng nghá»‡ AI Moderator tá»± Ä‘á»™ng quÃ©t vÃ  lá»c cÃ¡c ná»™i dung quáº£ng cÃ¡o sai quy Ä‘á»‹nh, spam hoáº·c vi pháº¡m chuáº©n má»±c vÄƒn hÃ³a giao thÆ°Æ¡ng.
+VIII. KIáº¾N NGHá»Š VÃ€ Tá»” CHá»¨C THá»°C HIá»†N
+KÃ­nh Ä‘á» nghá»‹ Ban GiÃ¡m Ä‘á»‘c vÃ  Há»™i Ä‘á»“ng Quáº£n trá»‹ phÃª duyá»‡t chá»§ trÆ°Æ¡ng triá»ƒn khai káº¿ hoáº¡ch phÃ¡t triá»ƒn ná»n táº£ng NovaCard theo cÃ¡c giai Ä‘oáº¡n nÃªu trÃªn. Sau khi káº¿ hoáº¡ch Ä‘Æ°á»£c thÃ´ng qua, Ä‘á»™i ngÅ© ká»¹ thuáº­t sáº½ láº­p tá»©c khá»Ÿi táº¡o dá»± Ã¡n, phÃ¢n rÃ£ cÃ´ng viá»‡c chi tiáº¿t (Sprint backlog) vÃ  bÃ¡o cÃ¡o tiáº¿n Ä‘á»™ Ä‘á»‹nh ká»³ hÃ ng tuáº§n.
+
+
+NÆ¡i nháº­n:
+- Ban GiÃ¡m Ä‘á»‘c Novatech (Ä‘á»ƒ chá»‰ Ä‘áº¡o);
+- Äá»™i ngÅ© Láº­p trÃ¬nh & Ká»¹ thuáº­t (Ä‘á»ƒ thá»±c hiá»‡n);
+- LÆ°u: VT, R&D.
+
+TM. BAN ÄIá»€U HÃ€NH Dá»° ÃN
+(KÃ½ vÃ  ghi rÃµ há» tÃªn)
+
+
+

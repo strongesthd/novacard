@@ -1,0 +1,1 @@
+export default async function Profile({params}:{params:Promise<{slug:string}>}){const {slug}=await params; return <main><h1>NovaCard Profile</h1><p>Hồ sơ: {slug}</p><p><a href={`/p/${slug}.vcf`}>Tải vCard</a></p></main>}
