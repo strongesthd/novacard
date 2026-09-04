@@ -99,6 +99,10 @@ jobs:
             if [ -f /tmp/novacard.env.production.bak ]; then cp /tmp/novacard.env.production.bak .env.production; fi
             if [ -f /tmp/novacard.env.bak ]; then cp /tmp/novacard.env.bak .env; fi
             rm -f /tmp/novacard.env.production.bak /tmp/novacard.env.bak
+            if ! grep -q '^POSTGRES_PASSWORD=' .env 2>/dev/null; then
+              printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 32)" >> .env
+              chmod 600 .env
+            fi
             docker compose -f docker-compose.prod.yml up -d --build --force-recreate --remove-orphans
             for attempt in $(seq 1 30); do
               if curl --fail --silent --show-error --max-time 10 http://127.0.0.1:4010/health >/dev/null && \
