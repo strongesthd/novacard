@@ -17,21 +17,23 @@ jobs:
   deploy:
     needs: validate
     if: github.ref == 'refs/heads/main'
+    environment: Moderation
     runs-on: ubuntu-latest
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
-          # VPS test theo todo.md/đã xác nhận: 27.72.104.154:2223.
-          # Chỉ giữ credential trong GitHub Secrets.
-          host: 27.72.104.154
-          username: root
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
           port: 2223
-          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          timeout: 60s
+          command_timeout: 20m
           script: |
             set -e
             cd /home/app/novacard
             git fetch origin main
             git reset --hard origin/main
+            docker compose -f docker-compose.prod.yml down
             docker compose -f docker-compose.prod.yml up -d --build
             docker compose -f docker-compose.prod.yml ps
