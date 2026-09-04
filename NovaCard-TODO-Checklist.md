@@ -7,13 +7,13 @@
 |---|---|---|---|---|---:|---|---|---|
 | TODO-001 | Khởi động | Chốt Product Vision, KPI, scope MVP | Must | PO/BA | 0–1 | — | PO ký duyệt PRD/decision log | Todo |
 | TODO-002 | Khởi động | Chốt privacy, consent, retention, terms | Must | Legal/Security | 0–2 | — | Legal phê duyệt data map và chính sách | Todo |
-| TODO-003 | Khởi động | Chốt kiến trúc, repo, CI/CD, staging, logging | Must | Tech Lead | 0–2 | 001 | Deploy được hello-world lên staging | Todo |
+| TODO-003 | Khởi động | Chốt kiến trúc, repo, CI/CD, staging, logging | Must | Tech Lead | 0–2 | 001 | Deploy được hello-world lên staging | Review |
 | TODO-004 | MVP | User flow và design system mobile-first | Must | UI/UX | 1–2 | 001 | Figma được review, có breakpoint/spec component | Todo |
 | TODO-005 | MVP | Đăng ký, OTP, session, reset password | Must | Backend | 2–3 | 003 | Qua security và E2E test đăng nhập | Todo |
-| TODO-006 | MVP | CRUD hồ sơ và visibility | Must | Full-stack | 2–4 | 005 | URL ổn định, public/private đúng quyền | Todo |
+| TODO-006 | MVP | CRUD hồ sơ và visibility | Must | Full-stack | 2–4 | 005 | URL ổn định, public/private đúng quyền | In Progress |
 | TODO-007 | MVP | Upload ảnh/logo/PDF qua object storage | Must | Backend | 3–4 | 003 | Validate loại/kích thước file, signed URL | Todo |
-| TODO-008 | MVP | Sinh/tải vCard UTF-8 | Must | Backend | 3–4 | 006 | iOS/Android lưu đúng trường danh bạ | Todo |
-| TODO-008A | MVP | Đặc tả và test luồng “1-click import” vCard trên Safari iOS | Must | Frontend/QA | 3–4 | 008 | Có test case Safari iOS, hướng dẫn thao tác và fallback khi không tự mở màn hình nhập Danh bạ | Todo |
+| TODO-008 | MVP | Sinh/tải vCard UTF-8 | Must | Backend | 3–4 | 006 | URL API và Content-Type vCard đã có; cần QA thiết bị thật | Review |
+| TODO-008A | MVP | Đặc tả và test luồng “1-click import” vCard trên Safari iOS | Must | Frontend/QA | 3–4 | 008 | Có test case Safari iOS, hướng dẫn thao tác và fallback khi không tự mở màn hình nhập Danh bạ | Review |
 | TODO-009 | MVP | Dynamic QR, logo, revoke, analytics cơ bản | Must | Full-stack | 3–4 | 006 | QR không đổi khi nội dung hồ sơ thay đổi | Todo |
 | TODO-010 | MVP | Admin user/profile/organization, RBAC, audit | Must | Full-stack | 3–4 | 005 | Role test đạt, có audit log | Todo |
 | TODO-011 | MVP | Regression, performance baseline, pilot nội bộ | Must | QA/PO | 4 | 008–010 | Không blocker, pilot sign-off | Todo |

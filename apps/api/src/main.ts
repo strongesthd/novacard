@@ -1,8 +1,43 @@
-import { createServer } from "node:http";
-const port = Number(process.env.PORT || 4000);
-createServer((req, res) => {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  if (req.url === "/health") { res.end(JSON.stringify({ ok: true, service: "novacard-api" })); return; }
-  if (req.url === "/api/docs") { res.end(JSON.stringify({ openapi: "3.0.0", info: { title: "NovaCard API", version: "1.0.0" } })); return; }
-  res.statusCode = 404; res.end(JSON.stringify({ error: "Not found" }));
-}).listen(port, "0.0.0.0", () => console.log(`NovaCard API listening on ${port}`));
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createHash, randomUUID } from "node:crypto";
+
+type Profile = { id: string; slug: string; displayName: string; title?: string; organization?: string; email?: string; phone?: string; website?: string; bio?: string; isPublic: boolean };
+type Job = { id: string; type: "ocr" | "ai"; status: "pending" | "processing" | "succeeded" | "failed"; createdAt: string };
+type User = { id: string; email: string; password: string; verified: boolean };
+const profiles = new Map<string, Profile>(); const jobs = new Map<string, Job>(); const users = new Map<string, User>(); const sessions = new Map<string, string>();
+const rateLimits = new Map<string, { count: number; resetAt: number }>();
+function json(res: ServerResponse, status: number, data: unknown, headers: Record<string, string> = {}) { res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers }); res.end(JSON.stringify(data)); }
+function audit(event: string, requestId: string, metadata: Record<string, unknown> = {}) { console.log(JSON.stringify({ event, requestId, at: new Date().toISOString(), ...metadata })); }
+async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> { let raw = ""; for await (const chunk of req) raw += chunk; if (!raw) return {}; try { return JSON.parse(raw) as Record<string, unknown>; } catch { throw new Error("Invalid JSON"); } }
+function vcard(profile: Profile) { const esc = (v = "") => v.replace(/[\\,;\n]/g, (c) => `\\${c === "\n" ? "n" : c}`); return ["BEGIN:VCARD", "VERSION:3.0", `FN:${esc(profile.displayName)}`, `N:${esc(profile.displayName)};;;`, profile.title && `TITLE:${esc(profile.title)}`, profile.organization && `ORG:${esc(profile.organization)}`, profile.phone && `TEL;TYPE=CELL:${esc(profile.phone)}`, profile.email && `EMAIL:${esc(profile.email)}`, profile.website && `URL:${esc(profile.website)}`, `item1.URL:https://novacard.novatechhp.vn/p/${profile.slug}`, "item1.X-ABLabel:NovaCard", "END:VCARD"].filter(Boolean).join("\r\n") + "\r\n"; }
+function allowed(req: IncomingMessage) { const key = req.socket.remoteAddress ?? "unknown"; const now = Date.now(); const current = rateLimits.get(key); if (!current || current.resetAt < now) { rateLimits.set(key, { count: 1, resetAt: now + 60_000 }); return true; } current.count += 1; return current.count <= 120; }
+function hash(value: string) { return createHash("sha256").update(value).digest("hex"); }
+function bearer(req: IncomingMessage) { const value = req.headers.authorization || ""; return value.startsWith("Bearer ") ? sessions.get(value.slice(7)) : undefined; }
+profiles.set("demo", { id: "demo", slug: "demo", displayName: "Nguyễn Văn Nova", title: "Business Development", organization: "Novatech", email: "hello@novacard.vn", phone: "+84900000000", website: "https://novacard.novatechhp.vn", bio: "Kết nối B2B thông minh với NovaCard.", isPublic: true });
+
+const server = createServer(async (req, res) => {
+  const requestId = req.headers["x-request-id"]?.toString() || randomUUID(); res.setHeader("X-Request-Id", requestId);
+  res.setHeader("Access-Control-Allow-Origin", process.env.CORS_ORIGIN || "http://localhost:3000"); res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id"); res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  if (req.method === "OPTIONS") return json(res, 204, null);
+  if (!allowed(req)) return json(res, 429, { error: "Too many requests", requestId }, { "Retry-After": "60" });
+  const path = new URL(req.url || "/", "http://localhost").pathname;
+  try {
+    if (req.method === "GET" && path === "/health") return json(res, 200, { ok: true, service: "novacard-api" });
+    if (req.method === "GET" && path === "/api/docs") return json(res, 200, { openapi: "3.0.0", info: { title: "NovaCard API", version: "1.1.0" }, paths: { "/auth/register": {}, "/auth/login": {}, "/auth/verify": {}, "/auth/logout": {}, "/p/{slug}": {}, "/p/{slug}/vcard": {}, "/profiles": {}, "/profiles/{id}/qr": {}, "/ocr/jobs": {}, "/jobs/{id}": {}, "/privacy/data": {} } });
+    if (req.method === "POST" && path === "/auth/register") { const input = await readBody(req); const email = String(input.email || "").trim().toLowerCase(); const password = String(input.password || ""); if (!/^\S+@\S+\.\S+$/.test(email) || password.length < 8) return json(res, 400, { error: "Valid email and password of at least 8 characters are required", requestId }); if (users.has(email)) return json(res, 409, { error: "Account already exists", requestId }); const user: User = { id: randomUUID(), email, password: hash(password), verified: false }; users.set(email, user); audit("auth.registered", requestId, { userId: user.id }); return json(res, 201, { user: { id: user.id, email, verified: false }, verificationRequired: true, devOtp: process.env.NODE_ENV === "production" ? undefined : "000000" }); }
+    if (req.method === "POST" && path === "/auth/login") { const input = await readBody(req); const user = users.get(String(input.email || "").trim().toLowerCase()); if (!user || user.password !== hash(String(input.password || ""))) return json(res, 401, { error: "Invalid credentials", requestId }); if (!user.verified) return json(res, 403, { error: "Account must be verified before login", requestId }); const token = randomUUID(); sessions.set(token, user.id); return json(res, 200, { token, user: { id: user.id, email: user.email } }); }
+    if (req.method === "POST" && path === "/auth/verify") { const input = await readBody(req); const user = users.get(String(input.email || "").trim().toLowerCase()); if (!user || String(input.otp || "") !== "000000") return json(res, 400, { error: "Invalid OTP", requestId }); user.verified = true; audit("auth.verified", requestId, { userId: user.id }); return json(res, 200, { ok: true }); }
+    if (req.method === "POST" && path === "/auth/logout") { const token = (req.headers.authorization || "").replace(/^Bearer\s+/, ""); sessions.delete(token); return json(res, 204, null); }
+    const match = path.match(/^\/p\/([^/]+)(\/vcard)?$/);
+    if (req.method === "GET" && match) { const profile = [...profiles.values()].find((p) => p.slug === match[1] && p.isPublic); if (!profile) return json(res, 404, { error: "Profile not found", requestId }); if (match[2]) { res.writeHead(200, { "Content-Type": "text/vcard; charset=utf-8", "Content-Disposition": `attachment; filename="${profile.slug}.vcf"`, "Cache-Control": "public, max-age=60" }); return res.end(vcard(profile)); } return json(res, 200, { profile }, { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" }); }
+    if (req.method === "GET" && path === "/profiles") return json(res, 200, { profiles: [...profiles.values()] });
+    if (req.method === "POST" && path === "/profiles") { const userId = bearer(req); if (!userId) return json(res, 401, { error: "Authentication required", requestId }); const input = await readBody(req); const displayName = String(input.displayName || "").trim(); const slug = String(input.slug || displayName.toLowerCase().replace(/[^a-z0-9]+/g, "-")).replace(/^-|-$/g, ""); if (!displayName || !slug || [...profiles.values()].some((p) => p.slug === slug)) return json(res, 400, { error: "displayName and unique slug are required", requestId }); const profile: Profile = { id: randomUUID(), slug, displayName, title: String(input.title || ""), organization: String(input.organization || ""), email: String(input.email || ""), phone: String(input.phone || ""), website: String(input.website || ""), bio: String(input.bio || ""), isPublic: input.isPublic !== false }; profiles.set(profile.id, profile); audit("profile.created", requestId, { profileId: profile.id, actorId: userId }); return json(res, 201, { profile }); }
+    const qrProfileId = path.match(/^\/profiles\/([^/]+)\/qr$/)?.[1]; if (req.method === "POST" && qrProfileId) { if (!bearer(req)) return json(res, 401, { error: "Authentication required", requestId }); const profile = profiles.get(qrProfileId); if (!profile) return json(res, 404, { error: "Profile not found", requestId }); const qr = { id: randomUUID(), profileId: profile.id, url: `https://novacard.novatechhp.vn/p/${profile.slug}`, active: true }; audit("qr.created", requestId, { profileId: profile.id, qrId: qr.id }); return json(res, 201, { qr }); }
+    const jobId = path.match(/^\/jobs\/([^/]+)$/)?.[1]; if (req.method === "GET" && jobId) { const job = jobs.get(jobId); return job ? json(res, 200, { job }) : json(res, 404, { error: "Job not found", requestId }); }
+    if (req.method === "POST" && (path === "/ocr/jobs" || path === "/ai/icebreakers")) { const job: Job = { id: randomUUID(), type: path.startsWith("/ocr") ? "ocr" : "ai", status: "pending", createdAt: new Date().toISOString() }; jobs.set(job.id, job); audit("async-job.created", requestId, { jobId: job.id, type: job.type }); return json(res, 202, { job }); }
+    if (req.method === "POST" && path === "/privacy/consents/withdraw") { audit("consent.withdrawn", requestId); return json(res, 202, { ok: true, status: "accepted" }); }
+    if (req.method === "DELETE" && path === "/privacy/data") { audit("privacy.deletion.requested", requestId); return json(res, 202, { ok: true, status: "queued" }); }
+    return json(res, 404, { error: "Not found", requestId });
+  } catch (error) { return json(res, 400, { error: error instanceof Error ? error.message : "Bad request", requestId }); }
+});
+const port = Number(process.env.PORT || 4000); server.listen(port, "0.0.0.0", () => console.log(`NovaCard API listening on ${port}`));

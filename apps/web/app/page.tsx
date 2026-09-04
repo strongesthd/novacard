@@ -1,1 +1,1 @@
-export default function Home(){return <main><h1>NovaCard</h1><p>Danh thiếp điện tử và kết nối B2B thông minh.</p><a href="/dashboard">Mở Dashboard</a></main>}
+export default function Home(){return <main style={{maxWidth:760,margin:"0 auto",padding:24}}><h1>NovaCard</h1><p>Danh thiếp điện tử và kết nối B2B thông minh.</p><p><a href="/p/demo">Xem hồ sơ demo</a> · <a href="/dashboard">Mở Dashboard</a></p></main>}

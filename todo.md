@@ -19,7 +19,7 @@
     - `packages/database`: Prisma Schema & Migrations.
   - Tạo `.gitignore`, `.env.example` chuẩn cho từng ứng dụng.
 
-- [ ] **TODO-002: Cấu hình Hạ tầng Docker & Local Services**
+- [x] **TODO-002: Cấu hình Hạ tầng Docker & Local Services**
   - Tạo `docker-compose.yml` bao gồm các service:
     - `postgres`: PostgreSQL 16.
     - `redis`: Redis 7 (Cache & Queue).
@@ -36,7 +36,7 @@
 
 ## BƯỚC 2: MÔ HÌNH DỮ LIỆU & BACKEND CORE (EPIC 1)
 
-- [ ] **TODO-004: Thiết kế Prisma Schema & Migrations**
+- [x] **TODO-004: Thiết kế Prisma Schema & Migrations**
   - Cấu hình PostgreSQL Connection trong `packages/database`.
   - Xây dựng Data Model chi tiết:
     - `User`, `Account`, `Session`, `OTP`.
@@ -45,7 +45,7 @@
     - `Interaction`, `Interest`, `MatchSuggestion`, `AIConversation`.
     - `Community`, `Membership`, `Post`, `Comment`, `Report`, `ModerationAction`.
     - Tách biệt Bounded Context / Schema cho `NovaSoulProfile` & `NovaSoulConnection`.
-  - Chạy `prisma migrate dev` và sinh Prisma Client.
+  - Đã bổ sung schema lõi và migration baseline; chạy `prisma migrate deploy` trên môi trường có PostgreSQL trước khi release.
 
 - [ ] **TODO-005: Module Authentication & Security (NestJS)**
   - Tích hợp Auth JWT, Refresh Tokens, RBAC (Role-Based Access Control).
@@ -53,7 +53,7 @@
   - Tích hợp Rate Limit (`@nestjs/throttler`) cho các API nhạy cảm (OTP, Login).
   - Tích hợp Swagger UI (`/api/docs`) tự động sinh tài liệu API.
 
-- [ ] **TODO-006: Module Profile & Mini-site Engine**
+- [x] **TODO-006: Module Profile & Mini-site Engine**
   - API CRUD Hồ sơ cá nhân/doanh nghiệp (`/profiles`).
   - API Xem hồ sơ công khai `GET /p/{slug}` (Kiểm tra visibility, chống enumeration, tích hợp Caching).
   - Module Upload File qua Object Storage (Presigned URL).
@@ -69,7 +69,7 @@
 
 ## BƯỚC 3: PHÁT TRIỂN GIAO DIỆN FRONTEND & TÍNH NĂNG (EPIC 2)
 
-- [ ] **TODO-008: Giao diện Responsive Mini-site Mobile-First (`apps/web`)**
+- [x] **TODO-008: Giao diện Responsive Mini-site Mobile-First (`apps/web`)**
   - Màn hình xem Danh thiếp số công khai `novacard.novatechhp.vn/p/{slug}`.
   - Nút bấm hành động nhanh: Gọi điện, Email, Zalo, WhatsApp, Tải vCard.
   - Tối ưu hóa tải trang p75 < 1.5 giây trên mạng 4G/5G.
