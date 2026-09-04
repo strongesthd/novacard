@@ -1,39 +1,116 @@
-name: NovaCard CI/CD
+name: Deploy NovaCard
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: novacard-production
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: 22, cache: npm}
-      - run: npm install
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
   deploy:
     needs: validate
-    if: github.ref == 'refs/heads/main'
-    environment: Moderation
     runs-on: ubuntu-latest
+    environment: Moderation
     steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.2
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Validate deploy secrets
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY || secrets.VPS_SH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$VPS_USER" || { echo 'Missing secret: VPS_USER'; exit 1; }
+          test -n "$VPS_SSH_KEY" || { echo 'Missing secret: VPS_SSH_KEY or VPS_SH_KEY'; exit 1; }
+
+      - name: Prepare deploy package
+        run: |
+          set -euo pipefail
+          mkdir -p deploy_dist
+          rsync -a \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'node_modules/' \
+            --exclude '.next/' \
+            --exclude '.turbo/' \
+            --exclude 'dist/' \
+            --exclude '.env' \
+            --exclude '.env.*' \
+            --exclude '*.log' \
+            --exclude 'deploy_dist/' \
+            ./ deploy_dist/
+          tar -C deploy_dist -czf novacard-deploy.tgz .
+          ls -lh novacard-deploy.tgz
+
+      - name: Upload package to VPS
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: 27.72.104.154
           username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY || secrets.VPS_SH_KEY }}
           port: 2223
-          key: ${{ secrets.VPS_SSH_KEY }}
-          timeout: 60s
-          command_timeout: 20m
+          source: novacard-deploy.tgz
+          target: /tmp/novacard-upload-${{ github.run_id }}
+          rm: true
+          overwrite: true
+          timeout: 120s
+          command_timeout: 10m
+
+      - name: Deploy and verify
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 27.72.104.154
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY || secrets.VPS_SH_KEY }}
+          port: 2223
+          script_stop: true
+          command_timeout: 30m
           script: |
-            set -e
-            cd /home/app/novacard
-            git fetch origin main
-            git reset --hard origin/main
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up -d --build
+            set -Eeuo pipefail
+            APP_DIR=/home/app/novacard
+            UPLOAD_DIR=/tmp/novacard-upload-${{ github.run_id }}
+            PACKAGE="$UPLOAD_DIR/novacard-deploy.tgz"
+            if [ ! -f "$PACKAGE" ]; then PACKAGE="$UPLOAD_DIR/novacard-deploy.tgz/novacard-deploy.tgz"; fi
+            test -f "$PACKAGE"
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+            if [ -f .env.production ]; then cp .env.production /tmp/novacard.env.production.bak; fi
+            if [ -f .env ]; then cp .env /tmp/novacard.env.bak; fi
+            find "$APP_DIR" -mindepth 1 -maxdepth 1 ! -name '.env' ! -name '.env.production' -exec rm -rf {} +
+            tar -xzf "$PACKAGE" -C "$APP_DIR"
+            if [ -f /tmp/novacard.env.production.bak ]; then cp /tmp/novacard.env.production.bak .env.production; fi
+            if [ -f /tmp/novacard.env.bak ]; then cp /tmp/novacard.env.bak .env; fi
+            rm -f /tmp/novacard.env.production.bak /tmp/novacard.env.bak
+            docker compose -f docker-compose.prod.yml up -d --build --force-recreate --remove-orphans
+            for attempt in $(seq 1 30); do
+              if curl --fail --silent --show-error --max-time 10 http://127.0.0.1:4010/health >/dev/null && \
+                 curl --fail --silent --show-error --max-time 10 http://127.0.0.1:8889/ >/dev/null; then
+                rm -rf "$UPLOAD_DIR"
+                echo 'Deploy done'
+                exit 0
+              fi
+              sleep 3
+            done
             docker compose -f docker-compose.prod.yml ps
+            docker compose -f docker-compose.prod.yml logs --tail 100 api web || true
+            exit 1
