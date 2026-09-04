@@ -21,7 +21,11 @@ services:
   api:
     build: {context: ., dockerfile: apps/api/Dockerfile}
     restart: unless-stopped
-    environment: {PORT: 4000, NODE_ENV: production, DEMO_AUTH: "true", DATABASE_URL: postgresql://novacard:${POSTGRES_PASSWORD}@db:5432/novacard}
+    environment:
+      PORT: "4000"
+      NODE_ENV: production
+      DEMO_AUTH: "true"
+      DATABASE_URL: "postgresql://novacard:${POSTGRES_PASSWORD}@db:5432/novacard"
     depends_on:
       db:
         condition: service_healthy
