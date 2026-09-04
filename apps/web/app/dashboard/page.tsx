@@ -1,1 +1,2 @@
-export default function Dashboard(){return <main style={{maxWidth:760,margin:"0 auto",padding:24}}><h1>User Portal</h1><p>Quản lý hồ sơ, QR, vCard, Google Wallet và Quick Share.</p><h2>Luồng chính</h2><ul><li>Hồ sơ công khai: <a href="/p/demo">/p/demo</a></li><li>vCard UTF-8 và hướng dẫn nhập Safari iOS</li><li>QR động trỏ tới URL hồ sơ ổn định</li><li>OCR bất đồng bộ: review và xác nhận trước khi lưu</li><li>Rút consent và yêu cầu xóa dữ liệu</li></ul></main>}
+import DashboardClient from "./dashboard-client";
+export default function Dashboard() { return <DashboardClient />; }
