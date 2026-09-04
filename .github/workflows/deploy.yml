@@ -22,9 +22,11 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          port: ${{ secrets.VPS_PORT }}
+          # VPS test theo todo.md/đã xác nhận: 27.72.104.154:2223.
+          # Chỉ giữ credential trong GitHub Secrets.
+          host: 27.72.104.154
+          username: root
+          port: 2223
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             set -e
