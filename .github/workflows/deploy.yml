@@ -29,7 +29,7 @@ jobs:
   deploy:
     needs: validate
     runs-on: ubuntu-latest
-    environment: Moderation
+    environment: novacard
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           set -euo pipefail
-          test -n "$VPS_SSH_KEY" || { echo 'Missing secret: VPS_SSH_KEY in Environment Moderation'; exit 1; }
+          test -n "$VPS_SSH_KEY" || { echo 'Missing secret: VPS_SSH_KEY in Environment novacard'; exit 1; }
 
       - name: Prepare deploy package
         run: |
