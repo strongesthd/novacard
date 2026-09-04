@@ -1,1 +1,8 @@
-export default function Layout({children}:{children:React.ReactNode}){return <html lang="vi"><body style={{fontFamily:"Arial",margin:40}}>{children}</body></html>}
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = { title: "NovaCard — Digital identity for B2B", description: "Danh thiếp số chuyên nghiệp cho kết nối B2B." };
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <html lang="vi" suppressHydrationWarning><body>{children}</body></html>;
+}
