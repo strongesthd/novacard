@@ -1,6 +1,234 @@
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
-generator client { provider = "prisma-client-js" }
-model User { id String @id @default(cuid()); email String @unique; createdAt DateTime @default(now()); profiles Profile[] }
-model Organization { id String @id @default(cuid()); name String; profiles Profile[] }
-model Profile { id String @id @default(cuid()); slug String @unique; displayName String; userId String; user User @relation(fields:[userId], references:[id]); organizationId String?; organization Organization? @relation(fields:[organizationId], references:[id]); createdAt DateTime @default(now()) }
-// NovaSoulProfile and NovaSoulConnection are isolated in a separate bounded context/schema.
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  USER
+  ORG_ADMIN
+  MODERATOR
+  ADMIN
+}
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+enum JobStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+enum ConsentStatus {
+  GRANTED
+  WITHDRAWN
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  phone String? @unique
+  passwordHash String?
+  emailVerifiedAt DateTime?
+  roles UserRole[] @default([USER])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profiles Profile[]
+  sessions Session[]
+  otpCodes OtpCode[]
+  consents Consent[]
+  auditLogs AuditLog[]
+}
+model Session {
+  id String @id @default(cuid())
+  userId String
+  tokenHash String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model OtpCode {
+  id String @id @default(cuid())
+  userId String?
+  destinationHash String
+  codeHash String
+  attempts Int @default(0)
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([destinationHash, expiresAt])
+}
+model Organization {
+  id String @id @default(cuid())
+  name String
+  profiles Profile[]
+}
+model Profile {
+  id String @id @default(cuid())
+  slug String @unique
+  displayName String
+  title String?
+  bio String?
+  email String?
+  phone String?
+  website String?
+  visibility Visibility @default(PRIVATE)
+  userId String
+  organizationId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  fields ProfileFieldVisibility[]
+  assets MediaAsset[]
+  qrCodes QRCode[]
+  walletPasses WalletPass[]
+}
+model ProfileFieldVisibility {
+  id String @id @default(cuid())
+  profileId String
+  field String
+  visible Boolean @default(false)
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@unique([profileId, field])
+}
+model MediaAsset {
+  id String @id @default(cuid())
+  profileId String
+  objectKey String @unique
+  mimeType String
+  byteSize Int
+  createdAt DateTime @default(now())
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+model QRCode {
+  id String @id @default(cuid())
+  profileId String
+  targetUrl String
+  logoAssetId String?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@index([profileId, revokedAt])
+}
+model WalletPass {
+  id String @id @default(cuid())
+  profileId String
+  provider String
+  externalId String?
+  status String @default("pending")
+  createdAt DateTime @default(now())
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  @@unique([provider, profileId])
+}
+model Contact {
+  id String @id @default(cuid())
+  ownerId String
+  profileId String?
+  displayName String
+  notes String?
+  source String?
+  createdAt DateTime @default(now())
+}
+model AIJob {
+  id String @id @default(cuid())
+  type String
+  status JobStatus @default(PENDING)
+  modelVersion String?
+  promptVersion String?
+  costMicros Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Community {
+  id String @id @default(cuid())
+  name String
+  tier Int @default(1)
+  createdAt DateTime @default(now())
+  posts Post[]
+}
+model Post {
+  id String @id @default(cuid())
+  communityId String
+  authorId String
+  body String
+  status String @default("published")
+  createdAt DateTime @default(now())
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  reports Report[]
+}
+model Comment {
+  id String @id @default(cuid())
+  postId String
+  authorId String
+  body String
+  createdAt DateTime @default(now())
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+model Report {
+  id String @id @default(cuid())
+  postId String
+  reporterId String
+  reason String
+  status String @default("open")
+  createdAt DateTime @default(now())
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  actions ModerationAction[]
+}
+model ModerationAction {
+  id String @id @default(cuid())
+  reportId String
+  actorId String
+  action String
+  reason String?
+  createdAt DateTime @default(now())
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+model Consent {
+  id String @id @default(cuid())
+  userId String
+  purpose String
+  policyVersion String
+  status ConsentStatus
+  grantedAt DateTime?
+  withdrawnAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, purpose, policyVersion])
+}
+model AuditLog {
+  id String @id @default(cuid())
+  actorId String?
+  action String
+  objectType String
+  objectId String?
+  requestId String?
+  result String
+  createdAt DateTime @default(now())
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  @@index([objectType, objectId, createdAt])
+}
+// NovaSoul stays isolated from Profile at the application/schema boundary.
+model NovaSoulProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  enabled Boolean @default(false)
+  visibility String @default("private")
+  verifiedAt DateTime?
+  createdAt DateTime @default(now())
+}
+model NovaSoulConnection {
+  id String @id @default(cuid())
+  requesterId String
+  recipientId String
+  requesterConsent Boolean @default(false)
+  recipientConsent Boolean @default(false)
+  blockedAt DateTime?
+  createdAt DateTime @default(now())
+  @@unique([requesterId, recipientId])
+}
