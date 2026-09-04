@@ -1,4 +1,18 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: novacard
+      POSTGRES_USER: novacard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novacard -d novacard"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
   web:
     build: {context: ., dockerfile: apps/web/Dockerfile}
     restart: unless-stopped
@@ -7,10 +21,14 @@ services:
   api:
     build: {context: ., dockerfile: apps/api/Dockerfile}
     restart: unless-stopped
-    environment: {PORT: 4000, NODE_ENV: production, DEMO_AUTH: "true"}
+    environment: {PORT: 4000, NODE_ENV: production, DEMO_AUTH: "true", DATABASE_URL: postgresql://novacard:${POSTGRES_PASSWORD}@db:5432/novacard}
+    depends_on:
+      db:
+        condition: service_healthy
     ports: ["127.0.0.1:4010:4000"]
     volumes:
       - novacard_data:/data
 
 volumes:
   novacard_data:
+  postgres_data:
