@@ -36,10 +36,10 @@ jobs:
 
       - name: Validate deploy secrets
         env:
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY || secrets.VPS_SH_KEY }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           set -euo pipefail
-          test -n "$VPS_SSH_KEY" || { echo 'Missing secret: VPS_SSH_KEY or VPS_SH_KEY'; exit 1; }
+          test -n "$VPS_SSH_KEY" || { echo 'Missing secret: VPS_SSH_KEY in Environment Moderation'; exit 1; }
 
       - name: Prepare deploy package
         run: |
@@ -65,7 +65,7 @@ jobs:
         with:
           host: 27.72.104.154
           username: root
-          key: ${{ secrets.VPS_SSH_KEY || secrets.VPS_SH_KEY }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: 2223
           source: novacard-deploy.tgz
           target: /tmp/novacard-upload-${{ github.run_id }}
@@ -79,7 +79,7 @@ jobs:
         with:
           host: 27.72.104.154
           username: root
-          key: ${{ secrets.VPS_SSH_KEY || secrets.VPS_SH_KEY }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           port: 2223
           script_stop: true
           command_timeout: 30m
