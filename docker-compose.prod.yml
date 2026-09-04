@@ -2,7 +2,7 @@ services:
   web:
     build: {context: ., dockerfile: apps/web/Dockerfile}
     restart: unless-stopped
-    environment: {PORT: 3000, NODE_ENV: production}
+    environment: {PORT: 3000, NODE_ENV: production, API_INTERNAL_URL: http://api:4000}
     ports: ["127.0.0.1:8889:3000"]
   api:
     build: {context: ., dockerfile: apps/api/Dockerfile}

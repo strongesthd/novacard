@@ -20,7 +20,7 @@ const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", process.env.CORS_ORIGIN || "http://localhost:3000"); res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id"); res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   if (req.method === "OPTIONS") return json(res, 204, null);
   if (!allowed(req)) return json(res, 429, { error: "Too many requests", requestId }, { "Retry-After": "60" });
-  const path = new URL(req.url || "/", "http://localhost").pathname;
+  const path = new URL(req.url || "/", "http://localhost").pathname.replace(/^\/api(?=\/)/, "");
   try {
     if (req.method === "GET" && path === "/health") return json(res, 200, { ok: true, service: "novacard-api" });
     if (req.method === "GET" && path === "/api/docs") return json(res, 200, { openapi: "3.0.0", info: { title: "NovaCard API", version: "1.1.0" }, paths: { "/auth/register": {}, "/auth/login": {}, "/auth/verify": {}, "/auth/logout": {}, "/p/{slug}": {}, "/p/{slug}/vcard": {}, "/profiles": {}, "/profiles/{id}/qr": {}, "/ocr/jobs": {}, "/jobs/{id}": {}, "/privacy/data": {} } });
