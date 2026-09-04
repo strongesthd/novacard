@@ -7,10 +7,10 @@
 |---|---|---|---|---|---:|---|---|---|
 | TODO-001 | Khởi động | Chốt Product Vision, KPI, scope MVP | Must | PO/BA | 0–1 | — | PO ký duyệt PRD/decision log | Todo |
 | TODO-002 | Khởi động | Chốt privacy, consent, retention, terms | Must | Legal/Security | 0–2 | — | Legal phê duyệt data map và chính sách | Todo |
-| TODO-003 | Khởi động | Chốt kiến trúc, repo, CI/CD, staging, logging | Must | Tech Lead | 0–2 | 001 | Deploy được hello-world lên staging | Review |
+| TODO-003 | Khởi động | Chốt kiến trúc, repo, CI/CD, staging, logging | Must | Tech Lead | 0–2 | 001 | Deploy được hello-world lên staging | Done |
 | TODO-004 | MVP | User flow và design system mobile-first | Must | UI/UX | 1–2 | 001 | Figma được review, có breakpoint/spec component | Todo |
 | TODO-005 | MVP | Đăng ký, OTP, session, reset password | Must | Backend | 2–3 | 003 | Qua security và E2E test đăng nhập | Todo |
-| TODO-006 | MVP | CRUD hồ sơ và visibility | Must | Full-stack | 2–4 | 005 | URL ổn định, public/private đúng quyền | In Progress |
+| TODO-006 | MVP | CRUD hồ sơ và visibility | Must | Full-stack | 2–4 | 005 | URL ổn định, public/private đúng quyền | Review |
 | TODO-007 | MVP | Upload ảnh/logo/PDF qua object storage | Must | Backend | 3–4 | 003 | Validate loại/kích thước file, signed URL | Todo |
 | TODO-008 | MVP | Sinh/tải vCard UTF-8 | Must | Backend | 3–4 | 006 | URL API và Content-Type vCard đã có; cần QA thiết bị thật | Review |
 | TODO-008A | MVP | Đặc tả và test luồng “1-click import” vCard trên Safari iOS | Must | Frontend/QA | 3–4 | 008 | Có test case Safari iOS, hướng dẫn thao tác và fallback khi không tự mở màn hình nhập Danh bạ | Review |
@@ -20,7 +20,7 @@
 | TODO-012 | Wallet | Apple Wallet pass | Must | Backend | 5–6 | 003,006 | Add to Apple Wallet hoạt động | Todo |
 | TODO-013 | Wallet | Google Wallet pass | Must | Backend | 5–6 | 003,006 | Add to Google Wallet hoạt động | Todo |
 | TODO-014 | Wallet | Thiết kế/test NFC tag/card và QR fallback | Should | Tech/Ops | 6–7 | 009 | Chạm mở đúng URL, có fallback QR | Todo |
-| TODO-015 | Wallet | Tối ưu p75 trang hồ sơ <1,5 giây trên 4G/5G | Must | Tech/QA | 7–8 | 009,012 | Có báo cáo đo đạt ngưỡng | Todo |
+| TODO-015 | Wallet | Tối ưu p75 trang hồ sơ <1,5 giây trên 4G/5G | Must | Tech/QA | 7–8 | 009,012 | Có báo cáo đo đạt ngưỡng | In Progress |
 | TODO-016 | AI | Chọn OCR provider/model; benchmark Việt/Anh/Hàn | Must | AI/Tech Lead | 9–10 | 002 | KPI accuracy và chi phí được phê duyệt | Todo |
 | TODO-017 | AI | OCR job pipeline, upload ảnh, retry/timeout | Must | Backend/AI | 10–11 | 016 | Có trạng thái pending/success/failed | Todo |
 | TODO-018 | AI | Màn hình review/sửa OCR trước khi lưu | Must | Frontend | 11–12 | 017 | Không auto-save dữ liệu chưa xác nhận | Todo |
@@ -31,7 +31,7 @@
 | TODO-023 | Ecosystem | AI Moderator và hàng đợi human review | Must | AI/Moderator | 16–18 | 022 | Có lý do gắn cờ và audit action | Todo |
 | TODO-024 | Ecosystem | NovaSoul: private mode, verification, mutual consent, block | Must | Full-stack/Legal | 17–19 | 002,022 | Mặc định tắt, không có kết nối một chiều | Todo |
 | TODO-025 | Ecosystem | Threat model, pentest, privacy assessment | Must | Security | 18–19 | Core modules | Lỗi critical/high được xử lý/chấp nhận rủi ro | Todo |
-| TODO-026 | Release | UAT, training, docs, production release | Must | PO/QA/Ops | 19–20 | 024,025 | UAT sign-off, runbook và rollback sẵn sàng | Todo |
+| TODO-026 | Release | UAT, training, docs, production release | Must | PO/QA/Ops | 19–20 | 024,025 | UAT sign-off, runbook và rollback sẵn sàng | In Progress |
 
 ## TODO bổ sung theo yêu cầu SRS
 
