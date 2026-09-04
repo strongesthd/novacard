@@ -23,7 +23,7 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.VPS_HOST }}
+          host: 27.72.104.154
           username: ${{ secrets.VPS_USER }}
           port: 2223
           key: ${{ secrets.VPS_SSH_KEY }}
