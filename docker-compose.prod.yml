@@ -9,3 +9,8 @@ services:
     restart: unless-stopped
     environment: {PORT: 4000, NODE_ENV: production, DEMO_AUTH: "true"}
     ports: ["127.0.0.1:4010:4000"]
+    volumes:
+      - novacard_data:/data
+
+volumes:
+  novacard_data:
