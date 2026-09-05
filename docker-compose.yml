@@ -7,6 +7,35 @@ services:
       POSTGRES_DB: novacard
     ports: ["5432:5432"]
     volumes: ["postgres_data:/var/lib/postgresql/data"]
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://novacard:novacard@postgres:5432/novacard
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: novacard-assets
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: miniosecret
+      OCR_LANGUAGES: eng+vie+kor
+    depends_on: [postgres, redis, minio]
+    command: node dist/main.js
+    ports: ["4000:4000"]
+  ocr-worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://novacard:novacard@postgres:5432/novacard
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: novacard-assets
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: miniosecret
+      OCR_LANGUAGES: eng+vie+kor
+    depends_on: [postgres, redis, minio]
+    command: node dist/worker.js
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
