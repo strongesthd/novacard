@@ -44,6 +44,7 @@ services:
   ocr-worker:
     build: {context: ., dockerfile: apps/api/Dockerfile}
     restart: unless-stopped
+    command: ["node", "dist/worker.js"]
     environment:
       NODE_ENV: production
       DATABASE_URL: "postgresql://novacard:${POSTGRES_PASSWORD}@db:5432/novacard"
