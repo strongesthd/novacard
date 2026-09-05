@@ -20,7 +20,7 @@ services:
       S3_SECRET_KEY: miniosecret
       OCR_LANGUAGES: eng+vie+kor
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     depends_on: [postgres, redis, minio]
     command: node dist/main.js
     ports: ["4000:4000"]
@@ -37,7 +37,7 @@ services:
       S3_SECRET_KEY: miniosecret
       OCR_LANGUAGES: eng+vie+kor
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     depends_on: [postgres, redis, minio]
     command: node dist/worker.js
   redis:

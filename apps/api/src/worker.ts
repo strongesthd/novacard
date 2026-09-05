@@ -14,7 +14,7 @@ async function recognize(data: { objectKey: string; contentType: string }) {
   const file = await bodyBuffer(object.Body);
   const geminiKey = process.env.GEMINI_API_KEY;
   if (geminiKey) {
-    const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
     const prompt = `??c ?nh danh thi?p v? ch? tr? v? JSON h?p l?, kh?ng markdown, theo ??ng schema n?y: {"displayName":"","title":"","organization":"","email":"","phone":"","website":"","bio":""}. Quy t?c: displayName ch? l? t?n ng??i; title ch? l? ch?c danh; organization ch? l? t?n c?ng ty/t? ch?c; kh?ng ??a title v?o organization ho?c displayName; kh?ng suy ?o?n; tr??ng kh?ng nh?n th?y ?? chu?i r?ng; gi? nguy?n ti?ng Vi?t c? d?u; chu?n h?a s? ?i?n tho?i v? website.`;
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: data.contentType, data: file.toString("base64") } }] }], generationConfig: { temperature: 0, responseMimeType: "application/json" } }), signal: AbortSignal.timeout(Number(process.env.OCR_TIMEOUT_MS || 60000))

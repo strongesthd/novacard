@@ -34,7 +34,7 @@ services:
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD}"
       OCR_LANGUAGES: "eng+vie+kor"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
-      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.0-flash}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-flash}"
       OCR_TIMEOUT_MS: "60000"
       OCR_WORKER_CONCURRENCY: "1"
     depends_on:
@@ -58,7 +58,7 @@ services:
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD}"
       OCR_LANGUAGES: "eng+vie+kor"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
-      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.0-flash}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-2.5-flash}"
       OCR_TIMEOUT_MS: "60000"
       OCR_WORKER_CONCURRENCY: "1"
     depends_on:
