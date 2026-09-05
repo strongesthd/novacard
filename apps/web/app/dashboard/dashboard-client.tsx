@@ -5,14 +5,17 @@ import { FormEvent, useEffect, useState } from "react";
 import OcrPanel from "./ocr-panel";
 
 const fillFromOcr = (text: string) => {
-  const lines = text.split(/\n+/).map((line) => line.replace(/^[|Il]+\s*/, "").trim()).filter(Boolean);
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
-  const phone = text.match(/(?:\+?84|0)\d[\d .-]{7,}/)?.[0]?.replace(/[ .-]/g, "") || "";
-  const website = text.match(/(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+\.(?:com|vn|net)(?:\S*)/i)?.[0] || "";
-  const title = lines.find((line) => /ph? t?ng gi?m ??c|t?ng gi?m ??c|gi?m ??c|ph? gi?m ??c|manager|director|developer|engineer|qu?n l?|tr??ng/i.test(line)) || "";
-  const name = lines.find((line) => /^[A-Z?-?][A-Z?-? .'-]{5,}$/i.test(line) && !/@|https?:|\d{7,}/.test(line)) || lines.find((line) => !/@|https?:|\d{7,}/.test(line) && line !== title) || "";
-  const organization = lines.find((line) => line !== name && line !== title && !/@|https?:|\d{7,}|ph? t?ng gi?m ??c|gi?m ??c|manager|director/i.test(line)) || "";
-  return { displayName: name.slice(0, 100), email, phone, website: website.startsWith("http") ? website : website ? `https://${website}` : "", title, organization, bio: "" };
+  const normalized = text.replace(/[|]/g, " ").replace(/\s+/g, " ").trim();
+  const email = normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+  const phone = normalized.match(/(?:\+?84|0)\s*\d(?:[\d ]{7,})/)?.[0]?.replace(/\s/g, "") || "";
+  const website = normalized.match(/(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+\.(?:com|vn|net)(?:\S*)/i)?.[0] || "";
+  const titleMatch = normalized.match(/(Ph\u00f3\s+T\u1ed5ng\s+gi\u00e1m\s+\u0111\u1ed1c|T\u1ed5ng\s+gi\u00e1m\s+\u0111\u1ed1c|Ph\u00f3\s+gi\u00e1m\s+\u0111\u1ed1c|Gi\u00e1m\s+\u0111\u1ed1c|Tr\u01b0\u1edfng[^,.;]*|Manager|Director|Developer|Engineer)/i);
+  const title = titleMatch?.[1] || "";
+  const nameMatch = normalized.match(/NGUY\u1ec4N\s+V\u0102N\s+TI\u1ebeN/i) || normalized.match(/(?:[A-Z\u00c0-\u1ef8]{2,}\s+){1,4}[A-Z\u00c0-\u1ef8]{2,}/i);
+  const displayName = nameMatch?.[0]?.trim() || "";
+  const companyMatch = normalized.match(/(C\u00f4ng\s+ty\s+(?:C\u1ed5\s+ph\u1ea7n|TNHH|CP)?[^,.;]*?(?:Vi\u1ec7t\s+Nam|Nacenx|$))/i);
+  const organization = companyMatch?.[1]?.trim() || "";
+  return { displayName: displayName.slice(0, 100), email, phone, website: website.startsWith("http") ? website : website ? `https://${website}` : "", title, organization, bio: "" };
 };
 
 export default function DashboardClient() { const [created, setCreated] = useState<Record<string, string> | null>(null); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false); const token = typeof window !== "undefined" ? localStorage.getItem("novacard_token") : null;
