@@ -5,12 +5,14 @@ import { FormEvent, useEffect, useState } from "react";
 import OcrPanel from "./ocr-panel";
 
 const fillFromOcr = (text: string) => {
-  const lines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  const lines = text.split(/\n+/).map((line) => line.replace(/^[|Il]+\s*/, "").trim()).filter(Boolean);
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
   const phone = text.match(/(?:\+?84|0)\d[\d .-]{7,}/)?.[0]?.replace(/[ .-]/g, "") || "";
-  const website = text.match(/https?:\/\/\S+/i)?.[0] || "";
-  const name = lines.find((line) => !/@|https?:|\d{7,}/.test(line)) || "";
-  return { displayName: name.slice(0, 100), email, phone, website, title: lines.find((line) => /manager|director|developer|engineer|gi?m ??c|qu?n l?|tr??ng/i.test(line)) || "", organization: lines.find((line) => line !== name && !/@|https?:|\d{7,}/.test(line)) || "", bio: "" };
+  const website = text.match(/(?:https?:\/\/)?(?:www\.)?[a-z0-9-]+\.(?:com|vn|net)(?:\S*)/i)?.[0] || "";
+  const title = lines.find((line) => /ph? t?ng gi?m ??c|t?ng gi?m ??c|gi?m ??c|ph? gi?m ??c|manager|director|developer|engineer|qu?n l?|tr??ng/i.test(line)) || "";
+  const name = lines.find((line) => /^[A-Z?-?][A-Z?-? .'-]{5,}$/i.test(line) && !/@|https?:|\d{7,}/.test(line)) || lines.find((line) => !/@|https?:|\d{7,}/.test(line) && line !== title) || "";
+  const organization = lines.find((line) => line !== name && line !== title && !/@|https?:|\d{7,}|ph? t?ng gi?m ??c|gi?m ??c|manager|director/i.test(line)) || "";
+  return { displayName: name.slice(0, 100), email, phone, website: website.startsWith("http") ? website : website ? `https://${website}` : "", title, organization, bio: "" };
 };
 
 export default function DashboardClient() { const [created, setCreated] = useState<Record<string, string> | null>(null); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false); const token = typeof window !== "undefined" ? localStorage.getItem("novacard_token") : null;
