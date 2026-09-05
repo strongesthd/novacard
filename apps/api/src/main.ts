@@ -55,17 +55,17 @@ const server = createServer(async (req, res) => {
     const qrProfileId = path.match(/^\/profiles\/([^/]+)\/qr$/)?.[1]; if (req.method === "POST" && qrProfileId) { if (!bearer(req)) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId }); const profile = profiles.get(qrProfileId); if (!profile) return json(res, 404, { error: "Không tìm thấy hồ sơ", requestId }); const qr = { id: randomUUID(), profileId: profile.id, url: `https://novacard.novatechhp.vn/p/${profile.slug}`, active: true }; audit("qr.created", requestId, { profileId: profile.id, qrId: qr.id }); return json(res, 201, { qr }); }
     const jobId = path.match(/^\/jobs\/([^/]+)$/)?.[1];
     if (req.method === "GET" && jobId) {
-      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui l?ng ??ng nh?p ?? ti?p t?c", requestId });
-      if (!db) return json(res, 503, { error: "OCR persistence ch?a ???c c?u h?nh", requestId });
+      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      if (!db) return json(res, 503, { error: "OCR persistence chưa được cấu hình", requestId });
       const result = await db.query(`SELECT "id","ownerId","status","result","error","createdAt" FROM "OCRJob" WHERE "id"=$1 AND "ownerId"=$2`, [jobId, ownerId]);
       return result.rowCount ? json(res, 200, { job: { ...result.rows[0], type: "ocr" } }) : json(res, 404, { error: "Job not found", requestId });
     }
     if (req.method === "POST" && path === "/ocr/jobs") {
-      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui l?ng ??ng nh?p ?? ti?p t?c", requestId });
-      if (!db || !ocrQueue || !s3) return json(res, 503, { error: "OCR service c?n DATABASE_URL, REDIS_URL v? S3_*", requestId });
+      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      if (!db || !ocrQueue || !s3) return json(res, 503, { error: "OCR service cần DATABASE_URL, REDIS_URL và S3_*", requestId });
       const input = await readBody(req); const contentType = String(input.contentType || ""); const encoded = String(input.data || "");
-      if (!allowedImageTypes.has(contentType) || !encoded) return json(res, 400, { error: "Ch? nh?n ?nh JPEG, PNG ho?c WebP", requestId });
-      const buffer = Buffer.from(encoded.replace(/^data:[^;]+;base64,/, ""), "base64"); if (!buffer.length || buffer.length > MAX_UPLOAD_BYTES) return json(res, 413, { error: "?nh kh?ng h?p l? ho?c v??t qu? 10MB", requestId });
+      if (!allowedImageTypes.has(contentType) || !encoded) return json(res, 400, { error: "Chỉ nhận ảnh JPEG, PNG hoặc WebP", requestId });
+      const buffer = Buffer.from(encoded.replace(/^data:[^;]+;base64,/, ""), "base64"); if (!buffer.length || buffer.length > MAX_UPLOAD_BYTES) return json(res, 413, { error: "Ảnh không hợp lệ hoặc vượt quá 10MB", requestId });
       const id = randomUUID(); const objectKey = `ocr/${ownerId}/${id}`; const bucket = process.env.S3_BUCKET || "novacard-assets";
       await s3.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: buffer, ContentType: contentType, Metadata: { ownerId, jobId: id } }));
       await db.query(`INSERT INTO "OCRJob" ("id","ownerId","objectKey","contentType") VALUES ($1,$2,$3,$4)`, [id, ownerId, objectKey, contentType]);
@@ -74,16 +74,16 @@ const server = createServer(async (req, res) => {
     }
     const confirmMatch = path.match(/^\/ocr\/jobs\/([^/]+)\/confirm$/)?.[1];
     if (req.method === "POST" && confirmMatch) {
-      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui l?ng ??ng nh?p ?? ti?p t?c", requestId });
-      if (!db) return json(res, 503, { error: "Database ch?a ???c c?u h?nh", requestId });
+      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
       const input = await readBody(req); const result = await db.query(`SELECT "result" FROM "OCRJob" WHERE "id"=$1 AND "ownerId"=$2 AND "status"='succeeded'`, [confirmMatch, ownerId]);
       if (!result.rowCount) return json(res, 404, { error: "OCR result not found or not completed", requestId });
       const fields = (input.fields || result.rows[0].result) as Record<string, unknown>; const displayName = String(fields.displayName || fields.name || "").trim();
-      if (!displayName) return json(res, 400, { error: "H? t?n l? b?t bu?c", requestId });
+      if (!displayName) return json(res, 400, { error: "Họ tên là bắt buộc", requestId });
       const contact = await db.query(`INSERT INTO "Contact" ("id","ownerId","displayName","notes","source") VALUES ($1,$2,$3,$4,$5) RETURNING "id","displayName","notes","source","createdAt"`, [randomUUID(), ownerId, displayName, JSON.stringify(fields), "ocr"]);
       await db.query(`UPDATE "OCRJob" SET "updatedAt"=now() WHERE "id"=$1`, [confirmMatch]); audit("ocr-job.confirmed", requestId, { jobId: confirmMatch, actorId: hash(ownerId) }); return json(res, 201, { contact: contact.rows[0] });
     }
-    if (req.method === "POST" && path === "/ai/icebreakers") return json(res, 501, { error: "AI icebreaker ch?a ???c tri?n khai; endpoint kh?ng nh?n mock jobs", requestId });
+    if (req.method === "POST" && path === "/ai/icebreakers") return json(res, 501, { error: "AI icebreaker chưa được triển khai; endpoint không nhận mock jobs", requestId });
     if (req.method === "POST" && path === "/privacy/consents/withdraw") { audit("consent.withdrawn", requestId); return json(res, 202, { ok: true, status: "accepted" }); }
     if (req.method === "DELETE" && path === "/privacy/data") { audit("privacy.deletion.requested", requestId); return json(res, 202, { ok: true, status: "queued" }); }
     return json(res, 404, { error: "Không tìm thấy nội dung", requestId });
