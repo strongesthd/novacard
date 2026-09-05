@@ -62,7 +62,7 @@ NovaCard là nền tảng định danh số và kết nối B2B theo hướng **
 | FR-005 | Dynamic QR | Sinh QR tới URL hồ sơ, gắn logo, hỗ trợ khóa/mở hoặc đổi đích. | Must | Không lộ trường riêng tư; quét thành công bằng camera hỗ trợ QR. |
 | FR-006 | Google Wallet, QR/NFC & Quick Share | MVP ưu tiên phát hành Google Wallet cho Android; NFC vật lý mở URL hồ sơ với QR fallback; cung cấp nút Quick Share qua Zalo/WhatsApp bằng deep-link/web share. Apple Wallet không thuộc MVP và chuyển Post-MVP/Phase 4. | Must | Add to Google Wallet hoạt động; Zalo/WhatsApp mở đúng nội dung hoặc fallback copy/share URL; NFC không yêu cầu app NovaCard; Apple Wallet được feature-flag/roadmap riêng. |
 | FR-007 | Danh bạ | Lưu liên hệ, nguồn gặp, ghi chú, tag, tìm kiếm/lọc, xuất/xóa dữ liệu. | Must | Người dùng xem/sửa/xóa được; có cơ chế consent phù hợp. |
-| FR-008 | OCR đa ngôn ngữ bất đồng bộ | Upload/chụp danh thiếp; tạo async job qua Task Queue (Redis/SQS); nhận diện Việt/Anh/Hàn và trích xuất trường. Client theo dõi trạng thái job, không giữ HTTP request chờ model. | Should | Có `pending/processing/succeeded/failed`, retry/timeout/idempotency; màn hình review/sửa trước khi lưu; không ghi đè bản ghi sẵn có. |
+| FR-008 | OCR đa ngôn ngữ bất đồng bộ | Upload/chụp danh thiếp; tạo async job qua Task Queue (Redis/SQS); nhận diện Việt/Anh/Hàn và trích xuất trường. Client theo dõi trạng thái job, không giữ HTTP request chờ model. Sau khi người dùng review và xác nhận, **mỗi lượt scan tạo một `Contact` mới thuộc danh bạ của người dùng**, không tạo/cập nhật `Profile` của chính người dùng và không ghi đè `Contact` đã tồn tại. | Should | Có `pending/processing/succeeded/failed`, retry/timeout/idempotency; màn hình review/sửa trước khi lưu; mỗi job chỉ được xác nhận một lần (retry cùng job không tạo bản ghi trùng); không ghi đè bản ghi sẵn có. |
 | FR-009 | Data enrichment | Gợi ý dữ liệu doanh nghiệp từ nguồn công khai. | Should | Hiển thị nguồn/thời điểm; người dùng xác nhận trước khi dùng/công bố. |
 | FR-010 | AI B2B bất đồng bộ | Tạo async job cho LLM: phân tích ngành nghề/sở thích, gợi ý điểm chung, ice-breaking và thư follow-up 48–72 giờ. Kết quả được lưu theo job/version và trả về khi hoàn tất. | Should | Không HTTP timeout; có trạng thái, retry, cost/token monitoring, disclaimer AI; không suy đoán thuộc tính nhạy cảm; người dùng có thể bỏ qua. |
 | FR-011 | Chatbot B2B | Hỏi đáp, tra cứu đối tác theo dữ liệu mà người dùng được phép truy cập. | Should | Không vượt quyền dữ liệu; trả lời có nguồn hoặc thông báo không tìm thấy. |
@@ -136,7 +136,7 @@ NovaCard là nền tảng định danh số và kết nối B2B theo hướng **
 
 1. Người nhận quét QR → mở mini-site → nhấn lưu danh bạ → hệ điều hành nhập vCard.
 2. Chủ hồ sơ sửa số điện thoại → URL/QR không đổi → người xem thấy nội dung mới.
-3. Người dùng chụp danh thiếp → OCR → sửa dữ liệu → xác nhận lưu → gắn tag/sự kiện.
+3. Người dùng chụp danh thiếp → OCR → sửa dữ liệu → xác nhận lưu → tạo **một Contact mới** → gắn tag/sự kiện. Lượt scan tiếp theo luôn tạo Contact khác; không đổ dữ liệu vào Profile của người dùng.
 4. Hai người tương tác → kiểm tra consent/visibility → tạo gợi ý điểm chung và ice-breaking.
 5. Người dùng bật NovaSoul → xác thực → thiết lập visibility → chỉ kết nối khi hai bên đồng thuận.
 6. Thành viên đăng bài → AI Moderator đánh giá → đăng hoặc vào hàng đợi → moderator xử lý và ghi audit.
