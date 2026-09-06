@@ -87,3 +87,4 @@ button, a { font: inherit; } a { color: inherit; text-decoration: none; }
 .dashboard-overview-metrics { margin-top: 16px; }
 .dashboard-overview-metrics .metric-card { padding: 16px; border-radius: 15px; box-shadow: none; }
 .dashboard-overview-metrics .metric-card strong { font-size: 22px; }
+.profile-form-hint-note { margin: 0; color: #94a3b8; font-size: 12px; line-height: 1.5; }
