@@ -65,3 +65,21 @@ button, a { font: inherit; } a { color: inherit; text-decoration: none; }
 .contact-source { padding: 6px 9px; border-radius: 9px; color: #4f46e5; font-size: 11px; font-weight: 700; background: #eef2ff; white-space: nowrap; }
 .profile-result small { color: #94a3b8; font-size: 11px; }
 @media (max-width: 520px) { .profile-overview { align-items: flex-start; padding: 18px 16px; gap: 14px; } .overview-avatar { width: 54px; height: 54px; border-radius: 17px; font-size: 20px; } .overview-heading { flex-direction: column; gap: 8px; } .overview-heading h2 { font-size: 17px; } .profile-result { align-items: flex-start; } .contact-source { margin-left: auto; } }
+
+.dashboard-tabs { display: flex; gap: 6px; margin-top: 28px; padding: 5px; border: 1px solid #e2e8f0; border-radius: 15px; background: #f1f5f9; }
+.dashboard-tab { min-height: 42px; display: inline-flex; flex: 1; align-items: center; justify-content: center; gap: 8px; padding: 0 14px; border: 0; border-radius: 11px; color: #64748b; cursor: pointer; font-size: 13px; font-weight: 800; background: transparent; transition: .2s; }
+.dashboard-tab:hover { color: #1d4ed8; background: #e0e7ff; }
+.dashboard-tab.active { color: #fff; background: linear-gradient(105deg, #2563eb, #7c3aed); box-shadow: 0 7px 16px #4f46e533; }
+.dashboard-tab-content { margin-top: 16px; }
+.dashboard-tab-content > .panel { margin: 0; }
+.dashboard-card-view { display: grid; grid-template-columns: minmax(0, 1fr) 520px; align-items: start; gap: 28px; padding: 26px; border: 1px solid #e2e8f0; border-radius: 20px; background: white; box-shadow: 0 8px 22px #0f172a08; }
+.card-view-heading h2 { margin: 7px 0; color: #0f172a; font: 800 22px 'Plus Jakarta Sans'; }
+.card-view-heading p:not(.kicker) { margin: 0; color: #64748b; font-size: 13px; line-height: 1.6; }
+.dashboard-card-view .profile-card { width: 100%; margin: 0; }
+.empty-dashboard-panel { display: grid; justify-items: center; gap: 9px; padding: 54px 24px; text-align: center; }
+.empty-dashboard-panel > svg { color: #6366f1; }
+.empty-dashboard-panel h2 { margin: 0; color: #0f172a; font: 800 18px 'Plus Jakarta Sans'; }
+.empty-dashboard-panel p { margin: 0 0 8px; color: #64748b; font-size: 13px; }
+@media (max-width: 900px) { .dashboard-card-view { grid-template-columns: 1fr; } .dashboard-card-view .profile-card { max-width: 520px; justify-self: center; } }
+@media (max-width: 520px) { .dashboard-tabs { gap: 3px; } .dashboard-tab { min-height: 38px; padding: 0 5px; gap: 5px; font-size: 11px; } .dashboard-tab svg { width: 14px; } .dashboard-card-view { padding: 16px; } }
+@media (prefers-color-scheme: dark) { .dashboard-tabs { border-color: #334155; background: #1e293b; } .dashboard-tab { color: #94a3b8; } .dashboard-tab:hover { color: #bfdbfe; background: #172554; } .dashboard-card-view, .empty-dashboard-panel { border-color: #334155; background: #111c30e8; } .card-view-heading h2, .empty-dashboard-panel h2 { color: #f8fafc; } .card-view-heading p:not(.kicker), .empty-dashboard-panel p { color: #94a3b8; } }
