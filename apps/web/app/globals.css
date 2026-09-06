@@ -83,3 +83,7 @@ button, a { font: inherit; } a { color: inherit; text-decoration: none; }
 @media (max-width: 900px) { .dashboard-card-view { grid-template-columns: 1fr; } .dashboard-card-view .profile-card { max-width: 520px; justify-self: center; } }
 @media (max-width: 520px) { .dashboard-tabs { gap: 3px; } .dashboard-tab { min-height: 38px; padding: 0 5px; gap: 5px; font-size: 11px; } .dashboard-tab svg { width: 14px; } .dashboard-card-view { padding: 16px; } }
 @media (prefers-color-scheme: dark) { .dashboard-tabs { border-color: #334155; background: #1e293b; } .dashboard-tab { color: #94a3b8; } .dashboard-tab:hover { color: #bfdbfe; background: #172554; } .dashboard-card-view, .empty-dashboard-panel { border-color: #334155; background: #111c30e8; } .card-view-heading h2, .empty-dashboard-panel h2 { color: #f8fafc; } .card-view-heading p:not(.kicker), .empty-dashboard-panel p { color: #94a3b8; } }
+
+.dashboard-overview-metrics { margin-top: 16px; }
+.dashboard-overview-metrics .metric-card { padding: 16px; border-radius: 15px; box-shadow: none; }
+.dashboard-overview-metrics .metric-card strong { font-size: 22px; }
