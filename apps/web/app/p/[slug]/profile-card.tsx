@@ -12,7 +12,10 @@ export default function ProfileCard({ profile, slug }: { profile: Profile; slug:
   const [saved, setSaved] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [shared, setShared] = useState(false);
-  const profileUrl = typeof window !== "undefined" ? window.location.href : `/p/${slug}`;
+  // The card is also rendered inside /dashboard. Always encode the public
+  // profile route so a QR created there never points back to the dashboard.
+  const profilePath = `/p/${encodeURIComponent(slug)}`;
+  const profileUrl = typeof window !== "undefined" ? new URL(profilePath, window.location.origin).toString() : profilePath;
 
   useEffect(() => {
     void QRCode.toDataURL(profileUrl, { width: 280, margin: 1, errorCorrectionLevel: "H" }).then(setQrDataUrl);
