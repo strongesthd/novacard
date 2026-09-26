@@ -8,3 +8,7 @@ dist
 coverage
 *.log
 .turbo
+
+*.tar.gz
+*.zip
+*.tsbuildinfo

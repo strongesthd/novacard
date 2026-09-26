@@ -38,11 +38,16 @@ export default function DashboardClient() {
     });
   }, [token]);
 
-  const formData = (form: HTMLFormElement) => Object.fromEntries(["displayName", "title", "organization", "email", "phone", "bio"].map((key) => [key, String(new FormData(form).get(key) || "")]));
+  const formData = (form: HTMLFormElement) => Object.fromEntries(["displayName", "title", "organization", "email", "phone", "bio", "website"].map((key) => [key, String(new FormData(form).get(key) || "")]));
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); setBusy(true); setMessage("");
+    event.preventDefault(); setMessage("");
+    const values = formData(event.currentTarget);
+    const requiredFields: Record<string, string> = { displayName: "h? v? t?n", title: "ch?c danh", organization: "c?ng ty / t? ch?c", email: "email", phone: "s? ?i?n tho?i", bio: "gi?i thi?u ng?n" };
+    const missingFields = Object.entries(requiredFields).filter(([field]) => !values[field]?.trim()).map(([, label]) => label);
+    if (missingFields.length) { setMessage(`Vui lòng bổ sung: ${missingFields.join(", ")}.`); return; }
+    setBusy(true);
     try {
-      const response = await fetch(profile ? `/api/profiles/${profile.id}` : "/api/profiles", { method: profile ? "PATCH" : "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` }, body: JSON.stringify(formData(event.currentTarget)) });
+      const response = await fetch(profile ? `/api/profiles/${profile.id}` : "/api/profiles", { method: profile ? "PATCH" : "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` }, body: JSON.stringify(values) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error || "Không thể lưu hồ sơ");
       setProfile(result.profile); setEditing(false); setMessage("Đã lưu thông tin hồ sơ.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Không thể lưu hồ sơ"); } finally { setBusy(false); }
