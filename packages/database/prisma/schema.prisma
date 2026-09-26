@@ -42,6 +42,7 @@ model User {
   otpCodes OtpCode[]
   consents Consent[]
   auditLogs AuditLog[]
+  notifications Notification[]
 }
 model Session {
   id String @id @default(cuid())
@@ -135,6 +136,29 @@ model Contact {
   source String?
   createdAt DateTime @default(now())
 }
+
+model ContactRequest {
+  id String @id @default(cuid())
+  requesterId String
+  ownerId String
+  status String @default("pending") // pending | accepted | rejected
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  requester Profile @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  owner Profile @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  @@unique([requesterId, ownerId])
+}
+
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  type String // "contact_request", "contact_accepted", etc.
+  title String
+  message String
+  read Boolean @default(false)
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 model AIJob {
   id String @id @default(cuid())
   type String
@@ -144,6 +168,8 @@ model AIJob {
   costMicros Int @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  contactRequestsReceived ContactRequest[] @relation("ProfileOwnerRequests")
+  contactRequestsSent ContactRequest[] @relation("ProfileRequesterRequests")
 }
 model Community {
   id String @id @default(cuid())

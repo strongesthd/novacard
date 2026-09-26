@@ -9,7 +9,21 @@ const redisConnection = process.env.REDIS_URL ? { url: process.env.REDIS_URL } :
 const ocrQueue = redisConnection ? new Queue("ocr-queue", { connection: { url: process.env.REDIS_URL! } }) : null;
 const s3 = process.env.S3_ENDPOINT ? new S3Client({ endpoint: process.env.S3_ENDPOINT, region: process.env.S3_REGION || "us-east-1", forcePathStyle: true, credentials: process.env.S3_ACCESS_KEY ? { accessKeyId: process.env.S3_ACCESS_KEY, secretAccessKey: process.env.S3_SECRET_KEY || "" } : undefined }) : null;
 const db = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL, max: 10, ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined }) : null;
-async function ensureDatabase() { if (!db) return; await db.query(`CREATE TABLE IF NOT EXISTS "OCRJob" ("id" TEXT PRIMARY KEY,"ownerId" TEXT NOT NULL,"objectKey" TEXT NOT NULL,"contentType" TEXT NOT NULL,"status" TEXT NOT NULL DEFAULT 'pending',"result" JSONB,"error" TEXT,"attempts" INT NOT NULL DEFAULT 0,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),"updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE INDEX IF NOT EXISTS "OCRJob_ownerId_idx" ON "OCRJob"("ownerId"); CREATE TABLE IF NOT EXISTS "User" ("id" TEXT PRIMARY KEY,"email" TEXT UNIQUE NOT NULL,"passwordHash" TEXT,"emailVerifiedAt" TIMESTAMPTZ,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE TABLE IF NOT EXISTS "Session" ("id" TEXT PRIMARY KEY,"userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,"tokenHash" TEXT UNIQUE NOT NULL,"expiresAt" TIMESTAMPTZ NOT NULL,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE TABLE IF NOT EXISTS "Profile" ("id" TEXT PRIMARY KEY,"slug" TEXT UNIQUE NOT NULL,"displayName" TEXT NOT NULL,"title" TEXT,"organization" TEXT,"bio" TEXT,"email" TEXT,"phone" TEXT,"website" TEXT,"visibility" TEXT NOT NULL DEFAULT 'PUBLIC',"userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),"updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE TABLE IF NOT EXISTS "Contact" ("id" TEXT PRIMARY KEY,"ownerId" TEXT NOT NULL,"profileId" TEXT,"displayName" TEXT NOT NULL,"notes" TEXT,"source" TEXT,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()); CREATE INDEX IF NOT EXISTS "Contact_ownerId_idx" ON "Contact"("ownerId"); ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "organization" TEXT;`); }
+async function ensureDatabase() {
+  if (!db) return;
+  await db.query(`CREATE TABLE IF NOT EXISTS "OCRJob" ("id" TEXT PRIMARY KEY,"ownerId" TEXT NOT NULL,"objectKey" TEXT NOT NULL,"contentType" TEXT NOT NULL,"status" TEXT NOT NULL DEFAULT 'pending',"result" JSONB,"error" TEXT,"attempts" INT NOT NULL DEFAULT 0,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),"updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE INDEX IF NOT EXISTS "OCRJob_ownerId_idx" ON "OCRJob"("ownerId");
+    CREATE TABLE IF NOT EXISTS "User" ("id" TEXT PRIMARY KEY,"email" TEXT UNIQUE NOT NULL,"passwordHash" TEXT,"emailVerifiedAt" TIMESTAMPTZ,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE TABLE IF NOT EXISTS "Session" ("id" TEXT PRIMARY KEY,"userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,"tokenHash" TEXT UNIQUE NOT NULL,"expiresAt" TIMESTAMPTZ NOT NULL,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE TABLE IF NOT EXISTS "Profile" ("id" TEXT PRIMARY KEY,"slug" TEXT UNIQUE NOT NULL,"displayName" TEXT NOT NULL,"title" TEXT,"organization" TEXT,"bio" TEXT,"email" TEXT,"phone" TEXT,"website" TEXT,"visibility" TEXT NOT NULL DEFAULT 'PUBLIC',"userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),"updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE TABLE IF NOT EXISTS "Contact" ("id" TEXT PRIMARY KEY,"ownerId" TEXT NOT NULL,"profileId" TEXT,"displayName" TEXT NOT NULL,"notes" TEXT,"source" TEXT,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE INDEX IF NOT EXISTS "Contact_ownerId_idx" ON "Contact"("ownerId");
+    CREATE TABLE IF NOT EXISTS "ContactRequest" ("id" TEXT PRIMARY KEY,"requesterId" TEXT NOT NULL REFERENCES "Profile"("id") ON DELETE CASCADE,"ownerId" TEXT NOT NULL REFERENCES "Profile"("id") ON DELETE CASCADE,"status" TEXT NOT NULL DEFAULT 'pending',"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),"updatedAt" TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE ("requesterId","ownerId"));
+    CREATE INDEX IF NOT EXISTS "ContactRequest_ownerId_status_idx" ON "ContactRequest"("ownerId","status");
+    CREATE TABLE IF NOT EXISTS "Notification" ("id" TEXT PRIMARY KEY,"userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,"type" TEXT NOT NULL,"title" TEXT NOT NULL,"message" TEXT NOT NULL,"read" BOOLEAN NOT NULL DEFAULT false,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE INDEX IF NOT EXISTS "Notification_userId_read_idx" ON "Notification"("userId","read");
+    ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "organization" TEXT;`);
+}
 
 type Profile = { id: string; ownerId?: string; slug: string; displayName: string; title?: string; organization?: string; email?: string; phone?: string; website?: string; bio?: string; isPublic: boolean };
 type Job = { id: string; type: "ocr" | "ai"; status: "pending" | "processing" | "succeeded" | "failed"; createdAt: string; ownerId?: string; result?: unknown; error?: string };
@@ -135,6 +149,66 @@ const server = createServer(async (req, res) => {
       if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
       const contacts = await db.query(`SELECT "id","displayName","notes","source","createdAt" FROM "Contact" WHERE "ownerId"=$1 ORDER BY "createdAt" DESC`, [ownerId]);
       return json(res, 200, { contacts: contacts.rows });
+    }
+    // Contact request flow: create, list, accept/reject.
+    if (req.method === "POST" && path === "/contact-requests") {
+      const requesterId = bearer(req); if (!requesterId) return json(res, 401, { error: "Vui lòng đăng nhập để gửi yêu cầu", requestId });
+      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
+      const input = await readBody(req);
+      const slug = String(input.slug || "").trim(); if (!slug) return json(res, 400, { error: "Thiếu hồ sơ đích", requestId });
+      const ownerProfile = [...profiles.values()].find((p) => p.slug === slug && p.isPublic);
+      if (!ownerProfile?.ownerId) return json(res, 404, { error: "Không tìm thấy hồ sơ công khai", requestId });
+      if (ownerProfile.ownerId === requesterId) return json(res, 400, { error: "Bạn không thể gửi yêu cầu cho chính mình", requestId });
+      const requesterProfile = [...profiles.values()].find((p) => p.ownerId === requesterId);
+      if (!requesterProfile) return json(res, 400, { error: "Bạn cần tạo hồ sơ trước khi kết nối", requestId });
+      try {
+        const reqRow = await db.query(`INSERT INTO "ContactRequest" ("id","requesterId","ownerId","status","updatedAt") VALUES ($1,$2,$3,'pending',now()) ON CONFLICT ("requesterId","ownerId") DO UPDATE SET "status"='pending',"updatedAt"=now() RETURNING *`, [randomUUID(), requesterProfile.id, ownerProfile.id]);
+        await db.query(`INSERT INTO "Notification" ("id","userId","type","title","message") VALUES ($1,$2,'contact_request','Yêu cầu kết nối danh bạ', $3)`, [randomUUID(), ownerProfile.ownerId, `${requesterProfile.displayName} muốn kết nối với bạn.`]);
+        return json(res, 201, { request: reqRow.rows[0], confirmUrl: `${appUrl()}/connect/${reqRow.rows[0].id}` });
+      } catch (error) { return json(res, 500, { error: "Không thể gửi yêu cầu kết nối", requestId }); }
+    }
+    const crById = path.match(/^\/contact-requests\/([^/]+)$/)?.[1];
+    if (req.method === "GET" && crById) {
+      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
+      const rows = await db.query(`SELECT cr."id", cr."status", cr."createdAt", p."slug" AS "requesterSlug", p."displayName" AS "requesterName", p."title" AS "requesterTitle", p."organization" AS "requesterOrganization", o."slug" AS "ownerSlug", o."displayName" AS "ownerName" FROM "ContactRequest" cr JOIN "Profile" p ON p."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE cr."id"=$1`, [crById]);
+      if (!rows.rowCount) return json(res, 404, { error: "Không tìm thấy yêu cầu kết nối", requestId });
+      return json(res, 200, { request: rows.rows[0] });
+    }
+    if (req.method === "GET" && path === "/contact-requests") {
+      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
+      const rows = await db.query(`SELECT cr.*, p."displayName" AS "requesterName", p."email" AS "requesterEmail" FROM "ContactRequest" cr JOIN "Profile" p ON p."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE o."userId"=$1 ORDER BY cr."createdAt" DESC`, [ownerId]);
+      return json(res, 200, { requests: rows.rows });
+    }
+    const crMatch = path.match(/^\/contact-requests\/([^/]+)\/(accept|reject)$/); const crId = crMatch?.[1]; const crAction = crMatch?.[2];
+    if (req.method === "POST" && crId && crAction) {
+      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
+      const rows = await db.query(`UPDATE "ContactRequest" SET "status"=$1,"updatedAt"=now() WHERE "id"=$2 AND "ownerId"=(SELECT "id" FROM "Profile" WHERE "userId"=$3) AND "status"='pending' RETURNING *`, [crAction === "accept" ? "accepted" : "rejected", crId, ownerId]);
+      if (!rows.rowCount) return json(res, 404, { error: "Không tìm thấy yêu cầu pending", requestId });
+      const reqRow = rows.rows[0];
+      if (crAction === "accept") {
+        const requesterProfile = [...profiles.values()].find((p) => p.id === reqRow.requesterId);
+        const ownerProfile = [...profiles.values()].find((p) => p.id === reqRow.ownerId);
+        if (requesterProfile && ownerProfile) {
+          const fields = { displayName: ownerProfile.displayName, title: ownerProfile.title || "", organization: ownerProfile.organization || "", email: ownerProfile.email || "", phone: ownerProfile.phone || "", website: ownerProfile.website || "" };
+          await db.query(`INSERT INTO "Contact" ("id","ownerId","profileId","displayName","notes","source") VALUES ($1,$2,$3,$4,$5,'request') ON CONFLICT DO NOTHING`, [randomUUID(), requesterProfile.ownerId!, ownerProfile.id, ownerProfile.displayName, JSON.stringify(fields)]);
+          await db.query(`INSERT INTO "Notification" ("id","userId","type","title","message") VALUES ($1,$2,'contact_accepted','Yêu cầu được chấp nhận', $3)`, [randomUUID(), requesterProfile.ownerId!, `${ownerProfile.displayName} đã chấp nhận yêu cầu kết nối của bạn.`]);
+        }
+      }
+      return json(res, 200, { request: reqRow });
+    }
+    if (req.method === "GET" && path === "/notifications") {
+      const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
+      const rows = await db.query(`SELECT * FROM "Notification" WHERE "userId"=$1 ORDER BY "createdAt" DESC LIMIT 50`, [userId]);
+      return json(res, 200, { notifications: rows.rows });
+    }
+    if (req.method === "POST" && path === "/notifications/read") {
+      const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
+      await db.query(`UPDATE "Notification" SET "read"=true WHERE "userId"=$1`, [userId]);
+      return json(res, 200, { ok: true });
     }
     if (req.method === "POST" && path === "/contacts") { const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId }); if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId }); const input = await readBody(req); const displayName = String(input.displayName || "").trim(); if (!displayName) return json(res, 400, { error: "Họ tên liên hệ là bắt buộc", requestId }); const fields = { displayName, title: String(input.title || ""), organization: String(input.organization || ""), email: String(input.email || ""), phone: String(input.phone || ""), website: String(input.website || "") }; const contact = await db.query(`INSERT INTO "Contact" ("id","ownerId","displayName","notes","source") VALUES ($1,$2,$3,$4,$5) RETURNING "id","displayName","notes","source","createdAt"`, [randomUUID(), ownerId, displayName, JSON.stringify(fields), "manual"]); audit("contact.created", requestId, { contactId: contact.rows[0].id, actorId: hash(ownerId), source: "manual" }); return json(res, 201, { contact: contact.rows[0] }); }
     const confirmMatch = path.match(/^\/ocr\/jobs\/([^/]+)\/confirm$/)?.[1];
