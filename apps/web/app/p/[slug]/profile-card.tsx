@@ -9,7 +9,6 @@ type Profile = Record<string, string>;
 export default function ProfileCard({ profile, slug }: { profile: Profile; slug: string }) {
   const [tab, setTab] = useState<"profile" | "qr" | "social">("profile");
   const [qrDataUrl, setQrDataUrl] = useState("");
-  const [saved, setSaved] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [shared, setShared] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -22,26 +21,6 @@ export default function ProfileCard({ profile, slug }: { profile: Profile; slug:
     void QRCode.toDataURL(profileUrl, { width: 280, margin: 1, errorCorrectionLevel: "H" }).then(setQrDataUrl);
   }, [profileUrl]);
 
-  const saveToAccount = async () => {
-    const token = localStorage.getItem("novacard_token");
-    if (!token) {
-      window.location.href = `/auth?next=${encodeURIComponent(`/p/${slug}`)}`;
-      return;
-    }
-    const response = await fetch("/api/contacts/from-profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ slug }),
-    });
-    const body = await response.json();
-    if (!response.ok) {
-      setSaveMessage(body.error || "Không thể lưu liên hệ");
-      return;
-    }
-    setSaved(true);
-    setSaveMessage("Đã lưu vào danh bạ NovaCard");
-  };
-
   const requestConnection = async () => {
     const token = localStorage.getItem("novacard_token");
     if (!token) {
@@ -52,7 +31,7 @@ export default function ProfileCard({ profile, slug }: { profile: Profile; slug:
     try {
       const response = await fetch("/api/contact-requests", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ slug }) });
       const body = await response.json();
-      setSaveMessage(response.ok ? "Đã gửi yêu cầu kết nối. Chủ hồ sơ sẽ nhận thông báo." : (body.error || "Không thể gửi yêu cầu kết nối"));
+      setSaveMessage(response.ok ? "Đã gửi yêu cầu. Chủ hồ sơ cần chấp nhận trước khi contact được lưu." : (body.error || "Không thể gửi yêu cầu kết nối"));
     } catch { setSaveMessage("Không thể kết nối đến máy chủ"); } finally { setRequesting(false); }
   };
 
@@ -86,7 +65,7 @@ export default function ProfileCard({ profile, slug }: { profile: Profile; slug:
       <div className="reference-identity"><h1>{profile.displayName}</h1><p>{profile.title || "Chức danh"}</p><small>{profile.organization || "Doanh nghiệp"}</small></div>
     </section>
     <section className="reference-actions">{actionItems.filter((item) => item.show).map(({ href, label, icon: Icon, external }) => <a key={label} href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}><Icon size={16} /><span>{label}</span>{external && <ExternalLink size={11} />}</a>)}</section>
-    <div className="reference-save-row"><a href={`/api/p/${encodeURIComponent(slug)}/vcard`}><Download size={16} /> LƯU DANH BẠ <small>File .vcf</small></a><button type="button" onClick={saveToAccount}><UserPlus size={16} /> {saved ? "ĐÃ LƯU" : "LƯU VÀO NOVACARD"}</button><button type="button" onClick={requestConnection} disabled={requesting}><Users size={16} /> {requesting ? "ĐANG GỬI" : "GỬI YÊU CẦU KẾT NỐI"}</button></div>
+    <div className="reference-save-row"><a href={`/api/p/${encodeURIComponent(slug)}/vcard`}><Download size={16} /> LƯU DANH BẠ <small>File .vcf</small></a><button type="button" onClick={requestConnection} disabled={requesting}><UserPlus size={16} /> {requesting ? "ĐANG GỬI" : "LƯU VÀO NOVACARD"}</button></div>
     {saveMessage && <p className="reference-save-message">{saveMessage}</p>}
     <section className="reference-section"><h2>HỒ SƠ CÁ NHÂN &amp; DOANH NGHIỆP</h2><a href={profile.website || "#"} target="_blank" rel="noreferrer"><Link2 size={16} /> PROFILE CÔNG TY <ExternalLink size={12} /></a><a href="#projects"><BriefcaseBusiness size={16} /> DỰ ÁN TIÊU BIỂU <ExternalLink size={12} /></a><a href="#social"><Users size={16} /> THÔNG TIN HỘI <ExternalLink size={12} /></a></section>
     <section className="reference-connect" id="social"><button type="button" onClick={() => setTab("qr")}><span>QUÉT MÃ QR KẾT NỐI</span>{qrDataUrl ? <img src={qrDataUrl} alt="Mã QR hồ sơ" /> : <QrCode size={60} />}</button></section>

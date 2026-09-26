@@ -134,18 +134,11 @@ const server = createServer(async (req, res) => {
       await ocrQueue.add("recognize-business-card", { jobId: id, ownerId, objectKey, contentType }, { jobId: id, attempts: 3, backoff: { type: "exponential", delay: 2000 }, removeOnComplete: 100, removeOnFail: 100 });
       const job: Job = { id, type: "ocr", status: "pending", ownerId, createdAt: new Date().toISOString() }; audit("ocr-job.created", requestId, { jobId: id, actorId: hash(ownerId) }); return json(res, 202, { job });
     }
-    if (req.method === "POST" && path === "/contacts/from-profile") {
-      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để lưu liên hệ", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-      const input = await readBody(req); const profile = [...profiles.values()].find((candidate) => candidate.slug === String(input.slug || "") && candidate.isPublic);
-      if (!profile) return json(res, 404, { error: "Không tìm thấy hồ sơ công khai", requestId });
-      if (profile.ownerId === ownerId) return json(res, 400, { error: "Bạn không thể lưu hồ sơ của chính mình", requestId });
-      const fields = { displayName: profile.displayName, title: profile.title || "", organization: profile.organization || "", email: profile.email || "", phone: profile.phone || "", website: profile.website || "" };
-      const contact = await db.query(`INSERT INTO "Contact" ("id","ownerId","displayName","notes","source") VALUES ($1,$2,$3,$4,$5) RETURNING "id","displayName","notes","source","createdAt"`, [randomUUID(), ownerId, profile.displayName, JSON.stringify(fields), "profile"]);
-      return json(res, 201, { contact: contact.rows[0] });
-    }
-    if (req.method === "GET" && path === "/contacts") {
-      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+   if (req.method === "POST" && path === "/contacts/from-profile") {
+      return json(res, 403, { error: "Lưu vào danh bạ chỉ qua luồng mời kết nối (accept request). Sử dụng nút Gửi yêu cầu kết nối trên profile." });
+   }
+   if (req.method === "GET" && path === "/contacts") {
+     const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
       if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
       const contacts = await db.query(`SELECT "id","displayName","notes","source","createdAt" FROM "Contact" WHERE "ownerId"=$1 ORDER BY "createdAt" DESC`, [ownerId]);
       return json(res, 200, { contacts: contacts.rows });
