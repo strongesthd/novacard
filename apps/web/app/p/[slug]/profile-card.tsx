@@ -1,21 +1,78 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { AtSign, BriefcaseBusiness, Check, Download, ExternalLink, Globe, ImageDown, Mail, MessageCircle, Phone, QrCode, Share2, Sparkles, UserRound, Users, UserPlus } from "lucide-react";
-import QRCode from "qrcode";
 import { useEffect, useState } from "react";
+import { BriefcaseBusiness, Check, Download, ExternalLink, FileText, Link2, Mail, MessageCircle, Phone, QrCode, Share2, UserPlus, Users } from "lucide-react";
+import QRCode from "qrcode";
 
 type Profile = Record<string, string>;
+
 export default function ProfileCard({ profile, slug }: { profile: Profile; slug: string }) {
-  const [tab, setTab] = useState("profile"); const [shared, setShared] = useState(false); const [saved, setSaved] = useState(false); const [saveMessage, setSaveMessage] = useState("");
-  const profileUrl = typeof window !== "undefined" ? window.location.href : `/p/${slug}`;
+  const [tab, setTab] = useState<"profile" | "qr" | "social">("profile");
   const [qrDataUrl, setQrDataUrl] = useState("");
-  useEffect(() => { void QRCode.toDataURL(profileUrl, { width: 260, margin: 1, errorCorrectionLevel: "H" }).then(setQrDataUrl); }, [profileUrl]);
-  const downloadQr = async () => { const dataUrl = await QRCode.toDataURL(profileUrl, { width: 900, margin: 3, errorCorrectionLevel: "H", color: { dark: "#0f172a", light: "#ffffff" } }); const link = document.createElement("a"); link.href = dataUrl; link.download = `${slug}-ma-qr.png`; link.click(); };
-  const downloadWallpaper = async () => { const qrUrl = await QRCode.toDataURL(profileUrl, { width: 1050, margin: 2, errorCorrectionLevel: "H", color: { dark: "#0f172a", light: "#ffffff" } }); const qrImage = new Image(); qrImage.src = qrUrl; await new Promise<void>((resolve, reject) => { qrImage.onload = () => resolve(); qrImage.onerror = () => reject(new Error("Không thể tạo ảnh nền")); }); const canvas = document.createElement("canvas"); canvas.width = 1440; canvas.height = 3200; const context = canvas.getContext("2d"); if (!context) return; const gradient = context.createLinearGradient(0, 0, 1440, 3200); gradient.addColorStop(0, "#0f172a"); gradient.addColorStop(0.55, "#1d4ed8"); gradient.addColorStop(1, "#7c3aed"); context.fillStyle = gradient; context.fillRect(0, 0, canvas.width, canvas.height); context.fillStyle = "#ffffff"; context.textAlign = "center"; context.font = "700 42px Arial"; context.fillText("NOVACARD", 720, 510); context.font = "800 76px Arial"; context.fillText(profile.displayName, 720, 720); context.fillStyle = "#dbeafe"; context.font = "500 38px Arial"; context.fillText(profile.title || "Danh tính số B2B", 720, 805); context.fillStyle = "#ffffff"; context.fillRect(195, 1060, 1050, 1050); context.drawImage(qrImage, 245, 1110, 950, 950); context.fillStyle = "#dbeafe"; context.font = "500 32px Arial"; context.fillText("Quét để mở hồ sơ", 720, 2320); context.font = "500 26px Arial"; context.fillText("novacard.novatechhp.vn", 720, 2410); canvas.toBlob((blob) => { if (!blob) return; const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${slug}-anh-nen-qr.png`; link.click(); URL.revokeObjectURL(link.href); }, "image/png"); };
-  const share = async () => { const url = window.location.href; if (navigator.share) await navigator.share({ title: profile.displayName, url }); else await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1800); };
-  const saveToAccount = async () => { const token = localStorage.getItem("novacard_token"); if (!token) { window.location.href = `/auth?next=${encodeURIComponent(`/p/${slug}`)}`; return; } const response = await fetch("/api/contacts/from-profile", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ slug }) }); const body = await response.json(); if (!response.ok) { setSaveMessage(body.error || "Không thể lưu liên hệ"); return; } setSaved(true); setSaveMessage("Đã lưu vào danh bạ NovaCard"); };
-  const initials = profile.displayName.split(" ").slice(-2).map((part) => part[0]).join("");
-  const actions = [{ href: `tel:${profile.phone}`, label: "Gọi điện", sub: "Liên hệ ngay", icon: Phone, show: !!profile.phone }, { href: `mailto:${profile.email}`, label: "Email", sub: "Gửi thư trực tiếp", icon: Mail, show: !!profile.email }, { href: "https://zalo.me", label: "Zalo", sub: "Nhắn tin nhanh", icon: MessageCircle, show: true, brand: true }, { href: profile.website, label: "Website", sub: "Khám phá thêm", icon: Globe, show: !!profile.website, external: true }];
-  return <motion.main className="profile-card" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .45 }}><div className="cover"><span className="cover-orb" /></div><div className="identity"><div className="avatar">{initials}<span className="verified" aria-label="Đã xác thực"><Check size={15} strokeWidth={3} /></span></div><p className="eyebrow">NovaCard · Danh tính số</p><h1 className="name">{profile.displayName}</h1><p className="role">{profile.title} {profile.organization && <><span aria-hidden="true"> · </span><span className="org"><BriefcaseBusiness size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />{profile.organization}</span></>}</p><p className="bio">{profile.bio || "Kết nối chuyên nghiệp, chia sẻ giá trị và phát triển cùng nhau."}</p><div className="quick-grid">{actions.filter((action) => action.show).map(({ href, label, sub, icon: Icon, brand, external }) => <a className={`action ${brand ? "action-brand" : ""}`} href={href} key={label} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}><span className="action-icon"><Icon size={18} /></span><span><span className="action-label">{label} {external && <ExternalLink size={12} style={{ verticalAlign: "-1px" }} />}</span><span className="action-sub">{sub}</span></span></a>)}</div><div className="profile-save-actions"><a className="save-button" href={`/api/p/${encodeURIComponent(slug)}/vcard`}><Download size={19} /> Lưu vào Danh bạ <span style={{ opacity: .75 }}>· vCard</span></a><button className="save-button account-save" type="button" onClick={saveToAccount}><UserPlus size={19} /> {saved ? "?? l?u v?o t?i kho?n" : "L?u v?o NovaCard"}</button></div>{saveMessage && <p className="save-message">{saveMessage}</p>}<div className="tabs" role="tablist">{[["profile", UserRound, "Hồ sơ"], ["qr", QrCode, "Mã QR"], ["social", AtSign, "Kết nối"]].map(([id, Icon, label]) => <button className={`tab ${tab === id ? "tab-active" : ""}`} role="tab" aria-selected={tab === id} onClick={() => setTab(id as string)} key={id as string}>{<Icon size={15} />}{label as string}</button>)}</div><div className="tab-panel">{tab === "profile" && <><h2 className="panel-title">Về {profile.displayName.split(" ").slice(-1)}</h2><p>Hãy lưu danh thiếp để giữ kết nối lâu dài. Bạn có thể cập nhật URL này bất cứ lúc nào mà không cần đổi mã QR.</p><a className="text-link" href={`/p/${encodeURIComponent(slug)}/guide`}>Hướng dẫn nhập danh bạ trên iPhone →</a></>}{tab === "qr" && <><div className="qr-box" aria-label="Mã QR hồ sơ" role="img">{qrDataUrl ? <img src={qrDataUrl} alt="Mã QR hồ sơ" /> : <QrCode size={68} />}</div><p className="qr-caption">Quét để mở hồ sơ này trên điện thoại<br /><button type="button" className="text-link qr-download" onClick={downloadQr}>Tải ảnh QR</button><button type="button" className="text-link qr-download" onClick={downloadWallpaper}><ImageDown size={14} /> Tải ảnh nền QR</button></p></>}{tab === "social" && <><h2 className="panel-title">Kết nối trên các nền tảng</h2><div className="socials"><a className="social" href="https://linkedin.com" aria-label="LinkedIn"><Users size={19} /></a><a className="social" href="https://facebook.com" aria-label="Facebook"><MessageCircle size={19} /></a><a className="social" href={profile.website} aria-label="Website"><Globe size={19} /></a><a className="social" href={profile.email ? `mailto:${profile.email}` : "#"} aria-label="Email"><Mail size={19} /></a></div></>}</div><div className="card-footer"><span><Sparkles size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} />Vận hành bởi NovaCard</span><button className="share" onClick={share}>{shared ? <Check size={14} /> : <Share2 size={14} />}{shared ? "Đã sao chép" : "Chia sẻ"}</button></div></div></motion.main>;
+  const [saved, setSaved] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  const [shared, setShared] = useState(false);
+  const profileUrl = typeof window !== "undefined" ? window.location.href : `/p/${slug}`;
+
+  useEffect(() => {
+    void QRCode.toDataURL(profileUrl, { width: 280, margin: 1, errorCorrectionLevel: "H" }).then(setQrDataUrl);
+  }, [profileUrl]);
+
+  const saveToAccount = async () => {
+    const token = localStorage.getItem("novacard_token");
+    if (!token) {
+      window.location.href = `/auth?next=${encodeURIComponent(`/p/${slug}`)}`;
+      return;
+    }
+    const response = await fetch("/api/contacts/from-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ slug }),
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      setSaveMessage(body.error || "Kh?ng th? l?u li?n h?");
+      return;
+    }
+    setSaved(true);
+    setSaveMessage("?? l?u v?o danh b? NovaCard");
+  };
+
+  const share = async () => {
+    if (navigator.share) await navigator.share({ title: profile.displayName, url: profileUrl });
+    else await navigator.clipboard.writeText(profileUrl);
+    setShared(true);
+    window.setTimeout(() => setShared(false), 1800);
+  };
+
+  const downloadQr = async () => {
+    const dataUrl = await QRCode.toDataURL(profileUrl, { width: 900, margin: 3, errorCorrectionLevel: "H" });
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = `${slug}-ma-qr.png`;
+    link.click();
+  };
+
+  const initials = profile.displayName.split(" ").slice(-2).map((part) => part[0]).join("").toUpperCase();
+  const actionItems = [
+    { href: profile.phone ? `tel:${profile.phone}` : "#", label: "G?I ?I?N", icon: Phone, show: Boolean(profile.phone) },
+    { href: profile.email ? `mailto:${profile.email}` : "#", label: "G?I EMAIL", icon: Mail, show: Boolean(profile.email) },
+    { href: "https://zalo.me", label: "NH?N ZALO", icon: MessageCircle, show: true },
+    { href: profile.website || "#", label: "XEM CATALOGUE", icon: FileText, show: Boolean(profile.website), external: true },
+  ];
+
+  return <main className="reference-profile-card">
+    <header className="reference-brand"><span className="reference-logo"><Link2 size={17} strokeWidth={2.5} /></span><strong>Novatech</strong></header>
+    <section className="reference-hero">
+      <div className="reference-avatar">{initials}<span><Check size={13} strokeWidth={3} /></span></div>
+      <div className="reference-identity"><h1>{profile.displayName}</h1><p>{profile.title || "Ch?c danh"}</p><small>{profile.organization || "Doanh nghi?p"}</small></div>
+    </section>
+    <section className="reference-actions">{actionItems.filter((item) => item.show).map(({ href, label, icon: Icon, external }) => <a key={label} href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}><Icon size={16} /><span>{label}</span>{external && <ExternalLink size={11} />}</a>)}</section>
+    <div className="reference-save-row"><a href={`/api/p/${encodeURIComponent(slug)}/vcard`}><Download size={16} /> L?U DANH B? <small>File .vcf</small></a><button type="button" onClick={saveToAccount}><UserPlus size={16} /> {saved ? "?? L?U" : "L?U V?O NOVACARD"}</button></div>
+    {saveMessage && <p className="reference-save-message">{saveMessage}</p>}
+    <section className="reference-section"><h2>H? S? C? NH?N &amp; DOANH NGHI?P</h2><a href={profile.website || "#"} target="_blank" rel="noreferrer"><Link2 size={16} /> PROFILE C?NG TY <ExternalLink size={12} /></a><a href="#projects"><BriefcaseBusiness size={16} /> D? ?N TI?U BI?U <ExternalLink size={12} /></a><a href="#social"><Users size={16} /> TH?NG TIN H?I <ExternalLink size={12} /></a></section>
+    <section className="reference-connect" id="social"><button type="button" onClick={() => setTab("qr")}><span>QU?T M? QR K?T N?I</span>{qrDataUrl ? <img src={qrDataUrl} alt="M? QR h? s?" /> : <QrCode size={60} />}</button></section>
+    {tab === "qr" && <div className="reference-qr-panel"><img src={qrDataUrl} alt="M? QR h? s?" /><p>Qu?t ?? m? h? s? n?y tr?n ?i?n tho?i</p><button type="button" onClick={downloadQr}>T?i ?nh QR</button></div>}
+    <footer className="reference-footer"><span>? NovaCard ? Novatech</span><button type="button" onClick={share}>{shared ? <Check size={13} /> : <Share2 size={13} />} {shared ? "?? sao ch?p" : "Chia s?"}</button></footer>
+  </main>;
 }
