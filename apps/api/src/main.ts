@@ -39,7 +39,11 @@ type Profile = { id: string; ownerId?: string; slug: string; displayName: string
 type Job = { id: string; type: "ocr" | "ai"; status: "pending" | "processing" | "succeeded" | "failed"; createdAt: string; ownerId?: string; result?: unknown; error?: string };
 type User = { id: string; email: string; password: string; verified: boolean };
 type QrCode = { id: string; profileId: string; targetUrl: string; logoAssetId?: string; label?: string; revokedAt?: string; scanCount: number; lastScannedAt?: string; createdAt: string };
+type ContactRecord = { id: string; ownerId: string; profileId?: string; displayName: string; notes: string; source: string; createdAt: string };
+type ContactRequestRecord = { id: string; requesterId: string; ownerId: string; status: "pending" | "accepted" | "rejected"; createdAt: string; updatedAt: string };
+type NotificationRecord = { id: string; userId: string; type: string; title: string; message: string; read: boolean; createdAt: string };
 const profiles = new Map<string, Profile>(); const jobs = new Map<string, Job>(); const users = new Map<string, User>(); const sessions = new Map<string, string>(); const qrCodes = new Map<string, QrCode>();
+const contactStore = new Map<string, ContactRecord>(); const contactRequestStore = new Map<string, ContactRequestRecord>(); const notificationStore = new Map<string, NotificationRecord>();
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const dataDir = process.env.DATA_DIR || "/data"; const dataFile = `${dataDir}/novacard.json`;
@@ -76,6 +80,25 @@ function resourceValue(value: unknown) {
   if (resource.startsWith("data:application/pdf;base64,")) return resource;
   if (/^https?:\/\//i.test(resource)) return resource;
   throw new Error("Tài nguyên phải là liên kết http(s) hoặc file PDF hợp lệ");
+}
+function dedupeContacts<T extends { displayName: string; notes?: string }>(rows: T[]) {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    let fields: Record<string, string> = {};
+    try { fields = typeof row.notes === "string" ? JSON.parse(row.notes) as Record<string, string> : {}; } catch { fields = {}; }
+    const key = [row.displayName, fields.email || "", fields.phone || ""].map((part) => String(part || "").trim().toLowerCase()).join("|");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+function addNotification(userId: string, type: string, title: string, message: string) {
+  const record: NotificationRecord = { id: randomUUID(), userId, type, title, message, read: false, createdAt: new Date().toISOString() };
+  notificationStore.set(record.id, record);
+  return record;
+}
+function findContact(ownerId: string, profileId: string, displayName: string) {
+  return [...contactStore.values()].find((contact) => contact.ownerId === ownerId && (contact.profileId === profileId || contact.displayName.toLowerCase() === displayName.toLowerCase()));
 }
 function oauthCallback(provider: "google" | "facebook") { return `${process.env.API_PUBLIC_URL || "http://localhost:4000"}/auth/${provider}/callback`; }
 function oauthRedirect(provider: "google" | "facebook", state: string) {
@@ -213,30 +236,26 @@ const server = createServer(async (req, res) => {
    }
    if (req.method === "GET" && path === "/contacts") {
      const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-       const contacts = await db.query(`SELECT "id","displayName","notes","source","createdAt" FROM "Contact" WHERE "ownerId"=$1 ORDER BY "createdAt" DESC`, [ownerId]);
-       const seen = new Set<string>();
-       const unique = contacts.rows.filter((row) => {
-         let fields: Record<string, string> = {};
-         try { fields = typeof row.notes === "string" ? JSON.parse(row.notes) : {}; } catch { fields = {}; }
-         const key = [row.displayName, fields.email || "", fields.phone || ""].map((part) => String(part || "").trim().toLowerCase()).join("|");
-         if (seen.has(key)) return false;
-         seen.add(key);
-         return true;
-       });
-       return json(res, 200, { contacts: unique });
+      const rows = db
+        ? (await db.query(`SELECT "id","displayName","notes","source","createdAt" FROM "Contact" WHERE "ownerId"=$1 ORDER BY "createdAt" DESC`, [ownerId])).rows
+        : [...contactStore.values()].filter((contact) => contact.ownerId === ownerId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return json(res, 200, { contacts: dedupeContacts(rows) });
      }
      const contactId = path.match(/^\/contacts\/([^/]+)$/)?.[1];
      if (req.method === "DELETE" && contactId) {
        const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
-       if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-       const deleted = await db.query(`DELETE FROM "Contact" WHERE "id"=$1 AND "ownerId"=$2 RETURNING "id"`, [contactId, ownerId]);
-       return deleted.rowCount ? json(res, 200, { ok: true }) : json(res, 404, { error: "Không tìm thấy liên hệ", requestId });
+       if (db) {
+         const deleted = await db.query(`DELETE FROM "Contact" WHERE "id"=$1 AND "ownerId"=$2 RETURNING "id"`, [contactId, ownerId]);
+         return deleted.rowCount ? json(res, 200, { ok: true }) : json(res, 404, { error: "Không tìm thấy liên hệ", requestId });
+       }
+       const record = contactStore.get(contactId);
+       if (!record || record.ownerId !== ownerId) return json(res, 404, { error: "Không tìm thấy liên hệ", requestId });
+       contactStore.delete(contactId);
+       return json(res, 200, { ok: true });
      }
     // Contact request flow: create, list, accept/reject.
     if (req.method === "POST" && path === "/contact-requests") {
       const requesterId = bearer(req); if (!requesterId) return json(res, 401, { error: "Vui lòng đăng nhập để gửi yêu cầu", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
       const input = await readBody(req);
       const slug = String(input.slug || "").trim(); if (!slug) return json(res, 400, { error: "Thiếu hồ sơ đích", code: "missing_slug", requestId });
       const ownerProfile = [...profiles.values()].find((p) => p.slug === slug && p.isPublic);
@@ -244,6 +263,15 @@ const server = createServer(async (req, res) => {
       if (ownerProfile.ownerId === requesterId) return json(res, 400, { error: "Bạn không thể gửi yêu cầu cho chính mình", code: "self_request", requestId });
       const requesterProfile = [...profiles.values()].find((p) => p.ownerId === requesterId);
       if (!requesterProfile) return json(res, 400, { error: "Bạn cần tạo hồ sơ trước khi kết nối", code: "profile_required", requestId });
+      if (!db) {
+        const existing = [...contactRequestStore.values()].find((request) => request.requesterId === requesterProfile.id && request.ownerId === ownerProfile.id);
+        const request = existing || { id: randomUUID(), requesterId: requesterProfile.id, ownerId: ownerProfile.id, status: "pending" as const, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        request.status = "pending";
+        request.updatedAt = new Date().toISOString();
+        contactRequestStore.set(request.id, request);
+        addNotification(ownerProfile.ownerId, "contact_request", "Yêu cầu kết nối danh bạ", `${requesterProfile.displayName} muốn kết nối với bạn.`);
+        return json(res, 201, { request, confirmUrl: `${appUrl()}/connect/${request.id}` });
+      }
       try {
         const reqRow = await db.query(`INSERT INTO "ContactRequest" ("id","requesterId","ownerId","status","updatedAt") VALUES ($1,$2,$3,'pending',now()) ON CONFLICT ("requesterId","ownerId") DO UPDATE SET "status"='pending',"updatedAt"=now() RETURNING *`, [randomUUID(), requesterProfile.id, ownerProfile.id]);
         await db.query(`INSERT INTO "Notification" ("id","userId","type","title","message") VALUES ($1,$2,'contact_request','Yêu cầu kết nối danh bạ', $3)`, [randomUUID(), ownerProfile.ownerId, `${requesterProfile.displayName} muốn kết nối với bạn.`]);
@@ -252,27 +280,54 @@ const server = createServer(async (req, res) => {
     }
     const crById = path !== "/contact-requests/sent" ? path.match(/^\/contact-requests\/([^/]+)$/)?.[1] : undefined;
     if (req.method === "GET" && crById) {
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-      const rows = await db.query(`SELECT cr."id", cr."status", cr."createdAt", p."slug" AS "requesterSlug", p."displayName" AS "requesterName", p."title" AS "requesterTitle", p."organization" AS "requesterOrganization", o."slug" AS "ownerSlug", o."displayName" AS "ownerName" FROM "ContactRequest" cr JOIN "Profile" p ON p."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE cr."id"=$1`, [crById]);
-      if (!rows.rowCount) return json(res, 404, { error: "Không tìm thấy yêu cầu kết nối", requestId });
-      return json(res, 200, { request: rows.rows[0] });
+      if (db) {
+        const rows = await db.query(`SELECT cr."id", cr."status", cr."createdAt", p."slug" AS "requesterSlug", p."displayName" AS "requesterName", p."title" AS "requesterTitle", p."organization" AS "requesterOrganization", o."slug" AS "ownerSlug", o."displayName" AS "ownerName" FROM "ContactRequest" cr JOIN "Profile" p ON p."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE cr."id"=$1`, [crById]);
+        if (!rows.rowCount) return json(res, 404, { error: "Không tìm thấy yêu cầu kết nối", requestId });
+        return json(res, 200, { request: rows.rows[0] });
+      }
+      const request = contactRequestStore.get(crById);
+      const requester = request && profiles.get(request.requesterId);
+      const owner = request && profiles.get(request.ownerId);
+      if (!request || !requester || !owner) return json(res, 404, { error: "Không tìm thấy yêu cầu kết nối", requestId });
+      return json(res, 200, { request: { id: request.id, status: request.status, createdAt: request.createdAt, requesterSlug: requester.slug, requesterName: requester.displayName, requesterTitle: requester.title || "", requesterOrganization: requester.organization || "", ownerSlug: owner.slug, ownerName: owner.displayName } });
     }
     if (req.method === "GET" && path === "/contact-requests") {
       const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-      const rows = await db.query(`SELECT cr.*, p."displayName" AS "requesterName", p."email" AS "requesterEmail" FROM "ContactRequest" cr JOIN "Profile" p ON p."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE o."userId"=$1 ORDER BY cr."createdAt" DESC`, [ownerId]);
-      return json(res, 200, { requests: rows.rows });
+      const rows = db
+        ? (await db.query(`SELECT cr.*, p."displayName" AS "requesterName", p."email" AS "requesterEmail" FROM "ContactRequest" cr JOIN "Profile" p ON p."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE o."userId"=$1 ORDER BY cr."createdAt" DESC`, [ownerId])).rows
+        : [...contactRequestStore.values()].filter((request) => profiles.get(request.ownerId)?.ownerId === ownerId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((request) => ({ ...request, requesterName: profiles.get(request.requesterId)?.displayName || "", requesterEmail: profiles.get(request.requesterId)?.email || "" }));
+      return json(res, 200, { requests: rows });
     }
     if (req.method === "GET" && path === "/contact-requests/sent") {
       const requesterUserId = bearer(req); if (!requesterUserId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-      const rows = await db.query(`SELECT cr."id", cr."status", cr."createdAt", o."slug" AS "ownerSlug", o."displayName" AS "ownerName", o."title" AS "ownerTitle", o."organization" AS "ownerOrganization", o."email" AS "ownerEmail", o."phone" AS "ownerPhone" FROM "ContactRequest" cr JOIN "Profile" requester ON requester."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE requester."userId"=$1 ORDER BY cr."createdAt" DESC`, [requesterUserId]);
-      return json(res, 200, { requests: rows.rows });
+      const rows = db
+        ? (await db.query(`SELECT cr."id", cr."status", cr."createdAt", o."slug" AS "ownerSlug", o."displayName" AS "ownerName", o."title" AS "ownerTitle", o."organization" AS "ownerOrganization", o."email" AS "ownerEmail", o."phone" AS "ownerPhone" FROM "ContactRequest" cr JOIN "Profile" requester ON requester."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE requester."userId"=$1 ORDER BY cr."createdAt" DESC`, [requesterUserId])).rows
+        : [...contactRequestStore.values()].filter((request) => profiles.get(request.requesterId)?.ownerId === requesterUserId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((request) => {
+          const owner = profiles.get(request.ownerId);
+          return { id: request.id, status: request.status, createdAt: request.createdAt, ownerSlug: owner?.slug || "", ownerName: owner?.displayName || "", ownerTitle: owner?.title || "", ownerOrganization: owner?.organization || "", ownerEmail: owner?.email || "", ownerPhone: owner?.phone || "" };
+        });
+      return json(res, 200, { requests: rows });
     }
     const crMatch = path.match(/^\/contact-requests\/([^/]+)\/(accept|reject)$/); const crId = crMatch?.[1]; const crAction = crMatch?.[2];
     if (req.method === "POST" && crId && crAction) {
       const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
+      if (!db) {
+        const request = contactRequestStore.get(crId);
+        const ownerProfile = request && profiles.get(request.ownerId);
+        if (!request || !ownerProfile || ownerProfile.ownerId !== ownerId || request.status !== "pending") return json(res, 404, { error: "Không tìm thấy yêu cầu pending", requestId });
+        request.status = crAction === "accept" ? "accepted" : "rejected";
+        request.updatedAt = new Date().toISOString();
+        const requesterProfile = profiles.get(request.requesterId);
+        if (crAction === "accept" && requesterProfile?.ownerId) {
+          if (!findContact(requesterProfile.ownerId, ownerProfile.id, ownerProfile.displayName)) {
+            const fields = { displayName: ownerProfile.displayName, title: ownerProfile.title || "", organization: ownerProfile.organization || "", email: ownerProfile.email || "", phone: ownerProfile.phone || "", website: ownerProfile.website || "" };
+            const contact: ContactRecord = { id: randomUUID(), ownerId: requesterProfile.ownerId, profileId: ownerProfile.id, displayName: ownerProfile.displayName, notes: JSON.stringify(fields), source: "request", createdAt: new Date().toISOString() };
+            contactStore.set(contact.id, contact);
+          }
+          addNotification(requesterProfile.ownerId, "contact_accepted", "Yêu cầu được chấp nhận", `${ownerProfile.displayName} đã chấp nhận yêu cầu kết nối của bạn.`);
+        }
+        return json(res, 200, { request });
+      }
       const rows = await db.query(`UPDATE "ContactRequest" AS request SET "status"=$1,"updatedAt"=now() WHERE request."id"=$2 AND EXISTS (SELECT 1 FROM "Profile" owner_profile WHERE owner_profile."id"=request."ownerId" AND owner_profile."userId"=$3) AND request."status"='pending' RETURNING request.*`, [crAction === "accept" ? "accepted" : "rejected", crId, ownerId]);
       if (!rows.rowCount) return json(res, 404, { error: "Không tìm thấy yêu cầu pending", requestId });
       const reqRow = rows.rows[0];
@@ -290,17 +345,18 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === "GET" && path === "/notifications") {
       const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-      const rows = await db.query(`SELECT * FROM "Notification" WHERE "userId"=$1 ORDER BY "createdAt" DESC LIMIT 50`, [userId]);
-      return json(res, 200, { notifications: rows.rows });
+      const rows = db
+        ? (await db.query(`SELECT * FROM "Notification" WHERE "userId"=$1 ORDER BY "createdAt" DESC LIMIT 50`, [userId])).rows
+        : [...notificationStore.values()].filter((item) => item.userId === userId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 50);
+      return json(res, 200, { notifications: rows });
     }
     if (req.method === "POST" && path === "/notifications/read") {
       const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
-      if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
-      await db.query(`UPDATE "Notification" SET "read"=true WHERE "userId"=$1`, [userId]);
+      if (db) await db.query(`UPDATE "Notification" SET "read"=true WHERE "userId"=$1`, [userId]);
+      else for (const item of notificationStore.values()) if (item.userId === userId) item.read = true;
       return json(res, 200, { ok: true });
     }
-    if (req.method === "POST" && path === "/contacts") { const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId }); if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId }); const input = await readBody(req); const displayName = String(input.displayName || "").trim(); if (!displayName) return json(res, 400, { error: "Họ tên liên hệ là bắt buộc", requestId }); const fields = { displayName, title: String(input.title || ""), organization: String(input.organization || ""), email: String(input.email || ""), phone: String(input.phone || ""), website: String(input.website || "") }; const contact = await db.query(`INSERT INTO "Contact" ("id","ownerId","displayName","notes","source") VALUES ($1,$2,$3,$4,$5) RETURNING "id","displayName","notes","source","createdAt"`, [randomUUID(), ownerId, displayName, JSON.stringify(fields), "manual"]); audit("contact.created", requestId, { contactId: contact.rows[0].id, actorId: hash(ownerId), source: "manual" }); return json(res, 201, { contact: contact.rows[0] }); }
+    if (req.method === "POST" && path === "/contacts") { const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId }); const input = await readBody(req); const displayName = String(input.displayName || "").trim(); if (!displayName) return json(res, 400, { error: "Họ tên liên hệ là bắt buộc", requestId }); const fields = { displayName, title: String(input.title || ""), organization: String(input.organization || ""), email: String(input.email || ""), phone: String(input.phone || ""), website: String(input.website || "") }; if (!db) { const contact: ContactRecord = { id: randomUUID(), ownerId, displayName, notes: JSON.stringify(fields), source: "manual", createdAt: new Date().toISOString() }; contactStore.set(contact.id, contact); return json(res, 201, { contact }); } const contact = await db.query(`INSERT INTO "Contact" ("id","ownerId","displayName","notes","source") VALUES ($1,$2,$3,$4,$5) RETURNING "id","displayName","notes","source","createdAt"`, [randomUUID(), ownerId, displayName, JSON.stringify(fields), "manual"]); audit("contact.created", requestId, { contactId: contact.rows[0].id, actorId: hash(ownerId), source: "manual" }); return json(res, 201, { contact: contact.rows[0] }); }
     const confirmMatch = path.match(/^\/ocr\/jobs\/([^/]+)\/confirm$/)?.[1];
     if (req.method === "POST" && confirmMatch) {
       const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
