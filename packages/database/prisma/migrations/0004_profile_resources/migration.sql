@@ -1,0 +1,3 @@
+ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "companyProfileUrl" TEXT;
+ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "projectsUrl" TEXT;
+ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "communityInfo" TEXT;

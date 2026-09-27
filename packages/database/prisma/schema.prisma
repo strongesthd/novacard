@@ -78,6 +78,9 @@ model Profile {
   email String?
   phone String?
   website String?
+  companyProfileUrl String?
+  projectsUrl String?
+  communityInfo String?
   visibility Visibility @default(PRIVATE)
   userId String
   organizationId String?

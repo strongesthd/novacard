@@ -10,6 +10,27 @@ type Profile = Record<string, string> & { id: string; slug: string };
 type Contact = { id: string; displayName: string; title?: string; organization?: string; email?: string; phone?: string; source?: string };
 type CurrentUser = { id: string; email: string };
 
+function addResourceFields(form: HTMLFormElement, profile: Profile | null) {
+  if (form.dataset.resourceFields === "true") return;
+  form.dataset.resourceFields = "true";
+  const fields = [
+    { name: "companyProfileUrl", label: "Profile công ty (URL)", value: profile?.companyProfileUrl?.startsWith("http") ? profile.companyProfileUrl : "", placeholder: "https://congty.vn/profile" },
+    { name: "companyProfileFile", label: "File profile công ty (PDF)", value: "", placeholder: "Tối đa 8MB", file: true },
+    { name: "projectsUrl", label: "Dự án tiêu biểu (URL)", value: profile?.projectsUrl?.startsWith("http") ? profile.projectsUrl : "", placeholder: "https://congty.vn/du-an" },
+    { name: "projectsFile", label: "File dự án tiêu biểu (PDF)", value: "", placeholder: "Tối đa 8MB", file: true },
+    { name: "communityInfo", label: "Thông tin hội", value: profile?.communityInfo || "", placeholder: "Các hội, hiệp hội, cộng đồng hoặc hoạt động chuyên môn…", textarea: true },
+  ];
+  const anchor = form.querySelector("button[type=submit]");
+  for (const field of fields) {
+    const label = document.createElement("label"); label.textContent = field.label;
+    const input = field.textarea ? document.createElement("textarea") : document.createElement("input");
+    input.name = field.name; input.placeholder = field.placeholder; input.value = field.value;
+    if (field.file && input instanceof HTMLInputElement) { input.type = "file"; input.accept = "application/pdf"; }
+    if (field.textarea && input instanceof HTMLTextAreaElement) input.rows = 4;
+    label.appendChild(input); form.insertBefore(label, anchor);
+  }
+}
+
 function readContact(contact: Record<string, unknown>): Contact {
   let fields: Record<string, string> = {};
   try { fields = typeof contact.notes === "string" ? JSON.parse(contact.notes) as Record<string, string> : {}; } catch { /* Keep basic legacy contacts usable. */ }
@@ -36,6 +57,11 @@ export default function DashboardClient() {
   }, []);
 
   useEffect(() => {
+    const form = document.querySelector<HTMLFormElement>(".profile-form");
+    if (form) addResourceFields(form, profile);
+  }, [editing, profile, tab]);
+
+  useEffect(() => {
     if (!token) { window.location.replace(next ? `/auth?next=${encodeURIComponent(next)}` : "/auth"); return; }
     const headers = { Authorization: `Bearer ${token}` };
     void fetch("/api/auth/me", { headers }).then(async (response) => {
@@ -52,10 +78,16 @@ export default function DashboardClient() {
     const response = await fetch("/api/contacts", { headers: { Authorization: `Bearer ${token}` } });
     if (response.ok) setContacts(((await response.json()).contacts || []).map(readContact));
   };
-  const formData = (form: HTMLFormElement) => Object.fromEntries(["displayName", "title", "organization", "email", "phone", "bio", "website"].map((key) => [key, String(new FormData(form).get(key) || "")]));
+  const formData = (form: HTMLFormElement) => Object.fromEntries(["displayName", "title", "organization", "email", "phone", "bio", "website", "companyProfileUrl", "projectsUrl", "communityInfo"].map((key) => [key, String(new FormData(form).get(key) || "")])) as Record<string, string>;
+  const readPdf = (file: File) => new Promise<string>((resolve, reject) => { if (file.type !== "application/pdf") return reject(new Error("Chỉ nhận file PDF")); if (file.size > 8 * 1024 * 1024) return reject(new Error("File PDF tối đa 8MB")); const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error("Không thể đọc file PDF")); reader.readAsDataURL(file); });
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setMessage("");
     const values = formData(event.currentTarget);
+    values.companyProfileUrl = values.companyProfileUrl || profile?.companyProfileUrl || "";
+    values.projectsUrl = values.projectsUrl || profile?.projectsUrl || "";
+    const companyProfileFile = (event.currentTarget.elements.namedItem("companyProfileFile") as HTMLInputElement | null)?.files?.[0];
+    const projectsFile = (event.currentTarget.elements.namedItem("projectsFile") as HTMLInputElement | null)?.files?.[0];
+    try { if (companyProfileFile) values.companyProfileUrl = await readPdf(companyProfileFile); if (projectsFile) values.projectsUrl = await readPdf(projectsFile); } catch (error) { setMessage(error instanceof Error ? error.message : "Không thể đọc tài liệu PDF"); return; }
     const requiredFields: Record<string, string> = { displayName: "h? v? t?n", title: "ch?c danh", organization: "c?ng ty / t? ch?c", email: "email", phone: "s? ?i?n tho?i", bio: "gi?i thi?u ng?n" };
     const missingFields = Object.entries(requiredFields).filter(([field]) => !values[field]?.trim()).map(([, label]) => label);
     if (missingFields.length) { setMessage(`Vui lòng bổ sung: ${missingFields.join(", ")}.`); return; }
