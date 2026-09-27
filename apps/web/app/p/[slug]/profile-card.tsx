@@ -15,6 +15,7 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
   const [saveMessage, setSaveMessage] = useState("");
   const [shared, setShared] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<"pending" | "accepted" | "rejected" | null>(null);
   const [viewer, setViewer] = useState<Viewer>({ authenticated: isOwnProfile, hasProfile: isOwnProfile, ownSlug: isOwnProfile ? slug : null, loading: !isOwnProfile });
   // The card is also rendered inside /dashboard. Always encode the public
   // profile route so a QR created there never points back to the dashboard.
@@ -54,6 +55,13 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
       }
       const own = (await response.json()).profiles as { id: string; slug: string }[] | undefined;
       if (active) setViewer({ authenticated: true, hasProfile: Boolean(own?.length), ownSlug: own?.find((candidate) => candidate.slug === slug)?.slug ?? null, loading: false });
+      if (own?.length) {
+        const sentResponse = await fetch("/api/contact-requests/sent", { headers: { Authorization: `Bearer ${token}` } });
+        if (sentResponse.ok) {
+          const sent = (await sentResponse.json()).requests as { ownerSlug: string; status: "pending" | "accepted" | "rejected" }[] | undefined;
+          if (active) setRequestStatus(sent?.find((request) => request.ownerSlug === slug)?.status || null);
+        }
+      }
       const ownProfile = own?.find((candidate) => candidate.slug === slug);
       if (ownProfile) {
         const qrResponse = await fetch(`/api/profiles/${encodeURIComponent(ownProfile.id)}/qr`, { headers: { Authorization: `Bearer ${token}` } });
@@ -87,7 +95,7 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
       const response = await fetch("/api/contact-requests", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ slug }) });
       const body = await response.json();
       if (response.status === 401) { localStorage.removeItem("novacard_token"); window.location.href = `/auth?next=${encodeURIComponent(profilePath)}`; return; }
-      if (response.ok) { setSaveMessage("Đã gửi yêu cầu. Chủ hồ sơ cần chấp nhận trước khi contact được lưu."); return; }
+       if (response.ok) { setRequestStatus("pending"); setSaveMessage("Đã gửi yêu cầu. Vui lòng chờ chủ hồ sơ chấp nhận."); return; }
       if (body.code === "profile_required") { window.location.href = `/dashboard?next=${encodeURIComponent(profilePath)}&reason=profile_required`; return; }
       if (body.code === "self_request") { setSaveMessage("Đây là hồ sơ của chính bạn."); return; }
       setSaveMessage(body.error || "Không thể gửi yêu cầu kết nối");
@@ -123,11 +131,15 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
     ? <span className="reference-save-hint">Đang kiểm tra hồ sơ</span>
     : isOwner
       ? null
-      : !viewer.authenticated
-        ? <a className="reference-save-cta" href={connectHref}><UserPlus size={16} /> ĐĂNG NHẬP ĐỂ KẾT NỐI<small>Đăng nhập NovaCard trước</small></a>
-        : !viewer.hasProfile
-          ? <a className="reference-save-cta" href={connectHref}><UserPlus size={16} /> TẠO HỒ SƠ ĐỂ KẾT NỐI<small>Bắt buộc có hồ sơ</small></a>
-          : <button type="button" onClick={requestConnection} disabled={requesting}><UserPlus size={16} /> {requesting ? "ĐANG GỬI" : "LƯU VÀO NOVACARD"}<small>Gửi yêu cầu kết nối</small></button>;
+      : requestStatus === "pending"
+        ? <span className="reference-save-hint">Đã gửi yêu cầu · Chờ chấp nhận</span>
+        : requestStatus === "accepted"
+          ? <span className="reference-save-hint">Đã kết nối</span>
+          : !viewer.authenticated
+            ? <a className="reference-save-cta" href={connectHref}><UserPlus size={16} /> ĐĂNG NHẬP ĐỂ KẾT NỐI<small>Đăng nhập NovaCard trước</small></a>
+            : !viewer.hasProfile
+              ? <a className="reference-save-cta" href={connectHref}><UserPlus size={16} /> TẠO HỒ SƠ ĐỂ KẾT NỐI<small>Bắt buộc có hồ sơ</small></a>
+              : <button type="button" onClick={requestConnection} disabled={requesting}><UserPlus size={16} /> {requesting ? "ĐANG GỬI" : "LƯU VÀO NOVACARD"}<small>Gửi yêu cầu kết nối</small></button>;
 
   return <main className="reference-profile-card">
     <header className="reference-brand"><img className="reference-logo" src="https://chatbot.novatechhp.vn/template-assets/CORPORATE_BASE/logo.png" alt="Novatech" /><div><strong>novatechhp.vn</strong><span className="reference-tagline">Giải pháp công nghệ và chuyển đổi số đồng hành cùng doanh nghiệp</span></div></header>

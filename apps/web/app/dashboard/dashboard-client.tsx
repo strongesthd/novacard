@@ -14,15 +14,16 @@ function addResourceFields(form: HTMLFormElement, profile: Profile | null) {
   if (form.dataset.resourceFields === "true") return;
   form.dataset.resourceFields = "true";
   const fields = [
-    { name: "companyProfileUrl", label: "Profile công ty (URL)", value: profile?.companyProfileUrl?.startsWith("http") ? profile.companyProfileUrl : "", placeholder: "https://congty.vn/profile" },
-    { name: "companyProfileFile", label: "File profile công ty (PDF)", value: "", placeholder: "Tối đa 8MB", file: true },
-    { name: "projectsUrl", label: "Dự án tiêu biểu (URL)", value: profile?.projectsUrl?.startsWith("http") ? profile.projectsUrl : "", placeholder: "https://congty.vn/du-an" },
-    { name: "projectsFile", label: "File dự án tiêu biểu (PDF)", value: "", placeholder: "Tối đa 8MB", file: true },
+    { name: "companyProfileUrl", label: "Profile công ty (URL hoặc PDF)", value: profile?.companyProfileUrl?.startsWith("http") ? profile.companyProfileUrl : "", placeholder: "Nhập URL hoặc chọn file PDF bên dưới", pair: "companyProfile" },
+    { name: "companyProfileFile", label: "File profile công ty (PDF, tùy chọn)", value: "", placeholder: "Chọn PDF nếu không dùng URL", file: true, pair: "companyProfile" },
+    { name: "projectsUrl", label: "Dự án tiêu biểu (URL hoặc PDF)", value: profile?.projectsUrl?.startsWith("http") ? profile.projectsUrl : "", placeholder: "Nhập URL hoặc chọn file PDF bên dưới", pair: "projects" },
+    { name: "projectsFile", label: "File dự án tiêu biểu (PDF, tùy chọn)", value: "", placeholder: "Chọn PDF nếu không dùng URL", file: true, pair: "projects" },
     { name: "communityInfo", label: "Thông tin hội", value: profile?.communityInfo || "", placeholder: "Các hội, hiệp hội, cộng đồng hoặc hoạt động chuyên môn…", textarea: true },
     { name: "avatarFile", label: "Ảnh đại diện", value: "", placeholder: "JPG, PNG hoặc WEBP tối đa 10MB", file: true, image: true },
   ];
   const anchor = form.querySelector("button");
   if (!anchor) { delete form.dataset.resourceFields; return; }
+  const inputs = new Map<string, HTMLInputElement | HTMLTextAreaElement>();
   for (const field of fields) {
     const label = document.createElement("label"); label.textContent = field.label;
     const input = field.textarea ? document.createElement("textarea") : document.createElement("input");
@@ -30,6 +31,14 @@ function addResourceFields(form: HTMLFormElement, profile: Profile | null) {
     if (field.file && input instanceof HTMLInputElement) { input.type = "file"; input.accept = field.image ? "image/jpeg,image/png,image/webp" : "application/pdf"; }
     if (field.textarea && input instanceof HTMLTextAreaElement) input.rows = 4;
     label.appendChild(input); form.insertBefore(label, anchor);
+    inputs.set(field.name, input);
+  }
+  for (const [urlName, fileName] of [["companyProfileUrl", "companyProfileFile"], ["projectsUrl", "projectsFile"]]) {
+    const urlInput = inputs.get(urlName);
+    const fileInput = inputs.get(fileName);
+    if (!(urlInput instanceof HTMLInputElement) || !(fileInput instanceof HTMLInputElement)) continue;
+    urlInput.addEventListener("input", () => { if (urlInput.value.trim()) fileInput.value = ""; });
+    fileInput.addEventListener("change", () => { if (fileInput.files?.length) urlInput.value = ""; });
   }
 }
 
