@@ -89,6 +89,8 @@ model Profile {
   assets MediaAsset[]
   qrCodes QRCode[]
   walletPasses WalletPass[]
+  contactRequestsReceived ContactRequest[] @relation("ProfileOwnerRequests")
+  contactRequestsSent ContactRequest[] @relation("ProfileRequesterRequests")
 }
 model ProfileFieldVisibility {
   id String @id @default(cuid())
@@ -112,7 +114,10 @@ model QRCode {
   profileId String
   targetUrl String
   logoAssetId String?
+  label String?
   revokedAt DateTime?
+  scanCount Int @default(0)
+  lastScannedAt DateTime?
   createdAt DateTime @default(now())
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   @@index([profileId, revokedAt])
@@ -144,8 +149,8 @@ model ContactRequest {
   status String @default("pending") // pending | accepted | rejected
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  requester Profile @relation(fields: [requesterId], references: [id], onDelete: Cascade)
-  owner Profile @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  requester Profile @relation("ProfileRequesterRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  owner Profile @relation("ProfileOwnerRequests", fields: [ownerId], references: [id], onDelete: Cascade)
   @@unique([requesterId, ownerId])
 }
 
@@ -168,8 +173,6 @@ model AIJob {
   costMicros Int @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  contactRequestsReceived ContactRequest[] @relation("ProfileOwnerRequests")
-  contactRequestsSent ContactRequest[] @relation("ProfileRequesterRequests")
 }
 model Community {
   id String @id @default(cuid())

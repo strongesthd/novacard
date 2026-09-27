@@ -1,5 +1,9 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+# Next.js inlines NEXT_PUBLIC_* at build time, so the canonical public origin
+# used to encode QR codes must be supplied here, not only at runtime.
+ARG NEXT_PUBLIC_APP_URL=https://novacard.novatechhp.vn
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 COPY package.json turbo.json ./
 COPY apps/web/package.json apps/web/package.json
 RUN npm install

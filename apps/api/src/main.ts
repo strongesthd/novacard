@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import pg = require("pg");
 import { Queue } from "bullmq";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import QRCode = require("qrcode");
 const { Pool } = pg;
 const redisConnection = process.env.REDIS_URL ? { url: process.env.REDIS_URL } : null;
 const ocrQueue = redisConnection ? new Queue("ocr-queue", { connection: { url: process.env.REDIS_URL! } }) : null;
@@ -22,26 +23,32 @@ async function ensureDatabase() {
     CREATE INDEX IF NOT EXISTS "ContactRequest_ownerId_status_idx" ON "ContactRequest"("ownerId","status");
     CREATE TABLE IF NOT EXISTS "Notification" ("id" TEXT PRIMARY KEY,"userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,"type" TEXT NOT NULL,"title" TEXT NOT NULL,"message" TEXT NOT NULL,"read" BOOLEAN NOT NULL DEFAULT false,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now());
     CREATE INDEX IF NOT EXISTS "Notification_userId_read_idx" ON "Notification"("userId","read");
+    CREATE TABLE IF NOT EXISTS "QRCode" ("id" TEXT PRIMARY KEY,"profileId" TEXT NOT NULL REFERENCES "Profile"("id") ON DELETE CASCADE,"targetUrl" TEXT NOT NULL,"logoAssetId" TEXT,"label" TEXT,"revokedAt" TIMESTAMPTZ,"scanCount" INTEGER NOT NULL DEFAULT 0,"lastScannedAt" TIMESTAMPTZ,"createdAt" TIMESTAMPTZ NOT NULL DEFAULT now());
+    CREATE INDEX IF NOT EXISTS "QRCode_profileId_revokedAt_idx" ON "QRCode"("profileId","revokedAt");
+    ALTER TABLE "QRCode" ADD COLUMN IF NOT EXISTS "label" TEXT;
+    ALTER TABLE "QRCode" ADD COLUMN IF NOT EXISTS "scanCount" INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE "QRCode" ADD COLUMN IF NOT EXISTS "lastScannedAt" TIMESTAMPTZ;
     ALTER TABLE "Profile" ADD COLUMN IF NOT EXISTS "organization" TEXT;`);
 }
 
 type Profile = { id: string; ownerId?: string; slug: string; displayName: string; title?: string; organization?: string; email?: string; phone?: string; website?: string; bio?: string; isPublic: boolean };
 type Job = { id: string; type: "ocr" | "ai"; status: "pending" | "processing" | "succeeded" | "failed"; createdAt: string; ownerId?: string; result?: unknown; error?: string };
 type User = { id: string; email: string; password: string; verified: boolean };
-const profiles = new Map<string, Profile>(); const jobs = new Map<string, Job>(); const users = new Map<string, User>(); const sessions = new Map<string, string>();
+type QrCode = { id: string; profileId: string; targetUrl: string; logoAssetId?: string; label?: string; revokedAt?: string; scanCount: number; lastScannedAt?: string; createdAt: string };
+const profiles = new Map<string, Profile>(); const jobs = new Map<string, Job>(); const users = new Map<string, User>(); const sessions = new Map<string, string>(); const qrCodes = new Map<string, QrCode>();
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const dataDir = process.env.DATA_DIR || "/data"; const dataFile = `${dataDir}/novacard.json`;
-function persist() { mkdirSync(dataDir, { recursive: true }); writeFileSync(dataFile, JSON.stringify({ profiles: [...profiles.values()], users: [...users.values()], sessions: [...sessions.entries()] }), "utf8"); void persistDatabase(); }
-async function persistDatabase() { if (!db) return; for (const user of users.values()) await db.query(`INSERT INTO "User" ("id","email","passwordHash","emailVerifiedAt") VALUES ($1,$2,$3,$4) ON CONFLICT ("email") DO UPDATE SET "passwordHash"=$3,"emailVerifiedAt"=$4`, [user.id, user.email, user.password, user.verified ? new Date() : null]); for (const [tokenHash, userId] of sessions) await db.query(`INSERT INTO "Session" ("id","userId","tokenHash","expiresAt") VALUES ($1,$2,$3,$4) ON CONFLICT ("tokenHash") DO UPDATE SET "expiresAt"=$4`, [randomUUID(), userId, tokenHash, new Date(Date.now() + 30 * 86400000)]); for (const profile of profiles.values()) if (profile.ownerId) await db.query(`INSERT INTO "Profile" ("id","slug","displayName","title","organization","bio","email","phone","website","visibility","userId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT ("slug") DO UPDATE SET "displayName"=$3,"title"=$4,"organization"=$5,"bio"=$6,"email"=$7,"phone"=$8,"website"=$9`, [profile.id, profile.slug, profile.displayName, profile.title || null, profile.organization || null, profile.bio || null, profile.email || null, profile.phone || null, profile.website || null, profile.isPublic ? "PUBLIC" : "PRIVATE", profile.ownerId]); }
-async function restoreDatabase() { if (!db) return; await ensureDatabase(); const usersResult = await db.query(`SELECT "id","email","passwordHash","emailVerifiedAt" FROM "User"`); for (const row of usersResult.rows) users.set(row.email, { id: row.id, email: row.email, password: row.passwordHash, verified: Boolean(row.emailVerifiedAt) }); const profilesResult = await db.query(`SELECT "id","userId","slug","displayName","title","organization","bio","email","phone","website","visibility" FROM "Profile"`); for (const row of profilesResult.rows) profiles.set(row.id, { id: row.id, ownerId: row.userId, slug: row.slug, displayName: row.displayName, title: row.title || "", organization: row.organization || "", bio: row.bio || "", email: row.email || "", phone: row.phone || "", website: row.website || "", isPublic: row.visibility === "PUBLIC" }); const sessionsResult = await db.query(`SELECT "tokenHash","userId" FROM "Session" WHERE "expiresAt" > now()`); for (const row of sessionsResult.rows) sessions.set(row.tokenHash, row.userId); }
-function restore() { if (db || !existsSync(dataFile)) return; try { const data = JSON.parse(readFileSync(dataFile, "utf8")) as { profiles?: Profile[]; users?: User[]; sessions?: [string, string][] }; for (const p of data.profiles || []) profiles.set(p.id, p); for (const u of data.users || []) users.set(u.email, u); for (const [token, userId] of data.sessions || []) sessions.set(hash(token), userId); } catch (error) { console.error("Could not restore persistent data", error); } }
+function persist() { mkdirSync(dataDir, { recursive: true }); writeFileSync(dataFile, JSON.stringify({ profiles: [...profiles.values()], users: [...users.values()], sessions: [...sessions.entries()], qrCodes: [...qrCodes.values()] }), "utf8"); void persistDatabase(); }
+async function persistDatabase() { if (!db) return; for (const user of users.values()) await db.query(`INSERT INTO "User" ("id","email","passwordHash","emailVerifiedAt") VALUES ($1,$2,$3,$4) ON CONFLICT ("email") DO UPDATE SET "passwordHash"=$3,"emailVerifiedAt"=$4`, [user.id, user.email, user.password, user.verified ? new Date() : null]); for (const [tokenHash, userId] of sessions) await db.query(`INSERT INTO "Session" ("id","userId","tokenHash","expiresAt") VALUES ($1,$2,$3,$4) ON CONFLICT ("tokenHash") DO UPDATE SET "expiresAt"=$4`, [randomUUID(), userId, tokenHash, new Date(Date.now() + 30 * 86400000)]); for (const profile of profiles.values()) if (profile.ownerId) await db.query(`INSERT INTO "Profile" ("id","slug","displayName","title","organization","bio","email","phone","website","visibility","userId") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT ("slug") DO UPDATE SET "displayName"=$3,"title"=$4,"organization"=$5,"bio"=$6,"email"=$7,"phone"=$8,"website"=$9`, [profile.id, profile.slug, profile.displayName, profile.title || null, profile.organization || null, profile.bio || null, profile.email || null, profile.phone || null, profile.website || null, profile.isPublic ? "PUBLIC" : "PRIVATE", profile.ownerId]); for (const qr of qrCodes.values()) await db.query(`INSERT INTO "QRCode" ("id","profileId","targetUrl","logoAssetId","label","revokedAt","scanCount","lastScannedAt","createdAt") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT ("id") DO UPDATE SET "targetUrl"=$3,"logoAssetId"=$4,"label"=$5,"revokedAt"=$6,"scanCount"=$7,"lastScannedAt"=$8`, [qr.id, qr.profileId, qr.targetUrl, qr.logoAssetId || null, qr.label || null, qr.revokedAt ? new Date(qr.revokedAt) : null, qr.scanCount, qr.lastScannedAt ? new Date(qr.lastScannedAt) : null, new Date(qr.createdAt)]); }
+async function restoreDatabase() { if (!db) return; await ensureDatabase(); const usersResult = await db.query(`SELECT "id","email","passwordHash","emailVerifiedAt" FROM "User"`); for (const row of usersResult.rows) users.set(row.email, { id: row.id, email: row.email, password: row.passwordHash, verified: Boolean(row.emailVerifiedAt) }); const profilesResult = await db.query(`SELECT "id","userId","slug","displayName","title","organization","bio","email","phone","website","visibility" FROM "Profile"`); for (const row of profilesResult.rows) profiles.set(row.id, { id: row.id, ownerId: row.userId, slug: row.slug, displayName: row.displayName, title: row.title || "", organization: row.organization || "", bio: row.bio || "", email: row.email || "", phone: row.phone || "", website: row.website || "", isPublic: row.visibility === "PUBLIC" }); const sessionsResult = await db.query(`SELECT "tokenHash","userId" FROM "Session" WHERE "expiresAt" > now()`); for (const row of sessionsResult.rows) sessions.set(row.tokenHash, row.userId); const qrResult = await db.query(`SELECT "id","profileId","targetUrl","logoAssetId","label","revokedAt","scanCount","lastScannedAt","createdAt" FROM "QRCode"`); for (const row of qrResult.rows) qrCodes.set(row.id, { id: row.id, profileId: row.profileId, targetUrl: row.targetUrl, logoAssetId: row.logoAssetId || undefined, label: row.label || undefined, revokedAt: row.revokedAt ? new Date(row.revokedAt).toISOString() : undefined, scanCount: Number(row.scanCount || 0), lastScannedAt: row.lastScannedAt ? new Date(row.lastScannedAt).toISOString() : undefined, createdAt: new Date(row.createdAt).toISOString() }); }
+function restore() { if (db || !existsSync(dataFile)) return; try { const data = JSON.parse(readFileSync(dataFile, "utf8")) as { profiles?: Profile[]; users?: User[]; sessions?: [string, string][]; qrCodes?: QrCode[] }; for (const p of data.profiles || []) profiles.set(p.id, p); for (const u of data.users || []) users.set(u.email, u); for (const [token, userId] of data.sessions || []) sessions.set(hash(token), userId); for (const qr of data.qrCodes || []) if (profiles.has(qr.profileId)) qrCodes.set(qr.id, { ...qr, scanCount: qr.scanCount || 0 }); } catch (error) { console.error("Could not restore persistent data", error); } }
 const rateLimits = new Map<string, { count: number; resetAt: number }>();
 const oauthStates = new Map<string, { provider: "google" | "facebook"; expiresAt: number }>();
 function json(res: ServerResponse, status: number, data: unknown, headers: Record<string, string> = {}) { res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", ...headers }); res.end(JSON.stringify(data)); }
 function audit(event: string, requestId: string, metadata: Record<string, unknown> = {}) { console.log(JSON.stringify({ event, requestId, at: new Date().toISOString(), ...metadata })); }
 async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> { let raw = ""; for await (const chunk of req) raw += chunk; if (!raw) return {}; try { return JSON.parse(raw) as Record<string, unknown>; } catch { throw new Error("Dữ liệu gửi lên không hợp lệ"); } }
-function vcard(profile: Profile) { const esc = (v = "") => v.replace(/[\\,;\n]/g, (c) => `\\${c === "\n" ? "n" : c}`); return ["BEGIN:VCARD", "VERSION:3.0", `FN:${esc(profile.displayName)}`, `N:${esc(profile.displayName)};;;`, profile.title && `TITLE:${esc(profile.title)}`, profile.organization && `ORG:${esc(profile.organization)}`, profile.phone && `TEL;TYPE=CELL:${esc(profile.phone)}`, profile.email && `EMAIL:${esc(profile.email)}`, profile.website && `URL:${esc(profile.website)}`, `item1.URL:https://novacard.novatechhp.vn/p/${profile.slug}`, "item1.X-ABLabel:NovaCard", "END:VCARD"].filter(Boolean).join("\r\n") + "\r\n"; }
+function vcard(profile: Profile) { const esc = (v = "") => v.replace(/[\\,;\n]/g, (c) => `\\${c === "\n" ? "n" : c}`); return ["BEGIN:VCARD", "VERSION:3.0", `FN:${esc(profile.displayName)}`, `N:${esc(profile.displayName)};;;`, profile.title && `TITLE:${esc(profile.title)}`, profile.organization && `ORG:${esc(profile.organization)}`, profile.phone && `TEL;TYPE=CELL:${esc(profile.phone)}`, profile.email && `EMAIL:${esc(profile.email)}`, profile.website && `URL:${esc(profile.website)}`, `item1.URL:${profileUrl(profile.slug)}`, "item1.X-ABLabel:NovaCard", "END:VCARD"].filter(Boolean).join("\r\n") + "\r\n"; }
 function allowed(req: IncomingMessage) { const key = req.socket.remoteAddress ?? "unknown"; const now = Date.now(); const current = rateLimits.get(key); if (!current || current.resetAt < now) { rateLimits.set(key, { count: 1, resetAt: now + 60_000 }); return true; } current.count += 1; return current.count <= 120; }
 function hash(value: string) { return createHash("sha256").update(value).digest("hex"); }
 function slugify(value: string) {
@@ -55,7 +62,9 @@ function uniqueSlug(displayName: string) {
   return slug;
 }
 function bearer(req: IncomingMessage) { const value = req.headers.authorization || ""; return value.startsWith("Bearer ") ? sessions.get(hash(value.slice(7))) : undefined; }
-function appUrl() { return process.env.PUBLIC_APP_URL || "http://localhost:3000"; }
+function appUrl() { return (process.env.PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, ""); }
+function profileUrl(slug: string) { return `${appUrl()}/p/${encodeURIComponent(slug)}`; }
+function qrUrl(id: string) { return `${(process.env.API_PUBLIC_URL || `${appUrl()}/api`).replace(/\/+$/, "")}/qr/${encodeURIComponent(id)}`; }
 function oauthCallback(provider: "google" | "facebook") { return `${process.env.API_PUBLIC_URL || "http://localhost:4000"}/auth/${provider}/callback`; }
 function oauthRedirect(provider: "google" | "facebook", state: string) {
   if (provider === "google") { const params = new URLSearchParams({ client_id: process.env.GOOGLE_CLIENT_ID || "", redirect_uri: oauthCallback(provider), response_type: "code", scope: "openid email profile", state }); return `https://accounts.google.com/o/oauth2/v2/auth?${params}`; }
@@ -72,7 +81,7 @@ if (!profiles.has("demo")) { profiles.set("demo", { id: "demo", slug: "demo", di
 
 const server = createServer(async (req, res) => {
   const requestId = req.headers["x-request-id"]?.toString() || randomUUID(); res.setHeader("X-Request-Id", requestId);
-  res.setHeader("Access-Control-Allow-Origin", process.env.CORS_ORIGIN || "http://localhost:3000"); res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id"); res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Origin", process.env.CORS_ORIGIN || "http://localhost:3000"); res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id");   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
   if (req.method === "OPTIONS") return json(res, 204, null);
   if (!allowed(req)) return json(res, 429, { error: "Bạn thao tác quá nhanh, vui lòng thử lại sau", requestId }, { "Retry-After": "60" });
   const path = new URL(req.url || "/", "http://localhost").pathname.replace(/^\/api(?=\/)/, "");
@@ -102,7 +111,7 @@ const server = createServer(async (req, res) => {
       if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Nhà cung cấp không trả về email hợp lệ");
       const user = socialUser(email, name); const token = randomUUID(); sessions.set(hash(token), user.id); persist(); res.writeHead(302, { Location: `${appUrl()}/auth?oauth_token=${encodeURIComponent(token)}` }); return res.end();
     }
-    if (req.method === "GET" && (path === "/api/docs" || path === "/docs")) return json(res, 200, { openapi: "3.0.0", info: { title: "NovaCard API", version: "1.1.0" }, paths: { "/auth/register": {}, "/auth/login": {}, "/auth/verify": {}, "/auth/logout": {}, "/p/{slug}": {}, "/p/{slug}/vcard": {}, "/profiles": {}, "/profiles/{id}/qr": {}, "/ocr/jobs": {}, "/jobs/{id}": {}, "/privacy/data": {} } });
+    if (req.method === "GET" && (path === "/api/docs" || path === "/docs")) return json(res, 200, { openapi: "3.0.0", info: { title: "NovaCard API", version: "1.1.0" }, paths: { "/auth/register": {}, "/auth/login": {}, "/auth/verify": {}, "/auth/logout": {}, "/p/{slug}": {}, "/p/{slug}/vcard": {}, "/profiles": {}, "/profiles/{id}/qr": {}, "/profiles/{id}/qr-wallpaper": {}, "/qr/{id}": {}, "/qr/{id}/analytics": {}, "/ocr/jobs": {}, "/jobs/{id}": {}, "/privacy/data": {} } });
     if (req.method === "POST" && path === "/auth/register") { const input = await readBody(req); const email = String(input.email || "").trim().toLowerCase(); const password = String(input.password || ""); if (!/^\S+@\S+\.\S+$/.test(email) || password.length < 8) return json(res, 400, { error: "Email hợp lệ và mật khẩu phải có ít nhất 8 ký tự", requestId }); if (users.has(email)) return json(res, 409, { error: "Tài khoản đã tồn tại", requestId }); const user: User = { id: randomUUID(), email, password: hash(password), verified: false }; users.set(email, user); persist(); audit("auth.registered", requestId, { userId: user.id }); return json(res, 201, { user: { id: user.id, email, verified: false }, verificationRequired: true, devOtp: process.env.NODE_ENV !== "production" || process.env.DEMO_AUTH === "true" ? "000000" : undefined }); }
     if (req.method === "POST" && path === "/auth/login") { const input = await readBody(req); const user = users.get(String(input.email || "").trim().toLowerCase()); if (!user || user.password !== hash(String(input.password || ""))) return json(res, 401, { error: "Email hoặc mật khẩu không chính xác", requestId }); if (!user.verified) return json(res, 403, { error: "Tài khoản cần được xác thực trước khi đăng nhập", requestId }); const token = randomUUID(); sessions.set(hash(token), user.id); persist(); return json(res, 200, { token, user: { id: user.id, email: user.email } }); }
     if (req.method === "POST" && path === "/auth/verify") { const input = await readBody(req); const user = users.get(String(input.email || "").trim().toLowerCase()); if (!user || String(input.otp || "") !== "000000" || (process.env.NODE_ENV === "production" && process.env.DEMO_AUTH !== "true")) return json(res, 400, { error: "Mã xác thực không hợp lệ", requestId }); user.verified = true; persist(); audit("auth.verified", requestId, { userId: user.id }); return json(res, 200, { ok: true }); }
@@ -114,7 +123,60 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && path === "/profiles") { const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId }); const input = await readBody(req); const displayName = String(input.displayName || "").trim(); if (!displayName) return json(res, 400, { error: "Họ và tên là bắt buộc", requestId }); const slug = uniqueSlug(displayName); const profile: Profile = { id: randomUUID(), ownerId: userId, slug, displayName, title: String(input.title || ""), organization: String(input.organization || ""), email: String(input.email || ""), phone: String(input.phone || ""), website: String(input.website || ""), bio: String(input.bio || ""), isPublic: input.isPublic !== false }; profiles.set(profile.id, profile); persist(); audit("profile.created", requestId, { profileId: profile.id, actorId: userId, slug }); return json(res, 201, { profile }); }
     const profileId = path.match(/^\/profiles\/([^/]+)$/)?.[1];
     if ((req.method === "PUT" || req.method === "PATCH") && profileId) { const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId }); const profile = profiles.get(profileId); if (!profile || profile.ownerId !== userId) return json(res, 404, { error: "Không tìm thấy hồ sơ", requestId }); const input = await readBody(req); const displayName = String(input.displayName || "").trim(); if (!displayName) return json(res, 400, { error: "Họ và tên là bắt buộc", requestId }); Object.assign(profile, { displayName, title: String(input.title || ""), organization: String(input.organization || ""), email: String(input.email || ""), phone: String(input.phone || ""), website: String(input.website || ""), bio: String(input.bio || ""), isPublic: input.isPublic !== false }); persist(); audit("profile.updated", requestId, { profileId, actorId: userId }); return json(res, 200, { profile }); }
-    const qrProfileId = path.match(/^\/profiles\/([^/]+)\/qr$/)?.[1]; if (req.method === "POST" && qrProfileId) { if (!bearer(req)) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId }); const profile = profiles.get(qrProfileId); if (!profile) return json(res, 404, { error: "Không tìm thấy hồ sơ", requestId }); const qr = { id: randomUUID(), profileId: profile.id, url: `https://novacard.novatechhp.vn/p/${profile.slug}`, active: true }; audit("qr.created", requestId, { profileId: profile.id, qrId: qr.id }); return json(res, 201, { qr }); }
+    const qrProfileId = path.match(/^\/profiles\/([^/]+)\/qr$/)?.[1];
+    if (qrProfileId) {
+      const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", code: "unauthenticated", requestId });
+      const profile = profiles.get(qrProfileId);
+      if (!profile) return json(res, 404, { error: "Không tìm thấy hồ sơ", code: "profile_not_found", requestId });
+      if (profile.ownerId !== userId) return json(res, 403, { error: "Bạn không có quyền quản lý mã QR của hồ sơ này", code: "forbidden", requestId });
+      if (req.method === "GET") return json(res, 200, { qrs: [...qrCodes.values()].filter((qr) => qr.profileId === profile.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((qr) => ({ ...qr, url: qrUrl(qr.id) })) });
+      if (req.method === "POST") {
+        const input = await readBody(req);
+        const qr: QrCode = { id: randomUUID(), profileId: profile.id, targetUrl: profileUrl(profile.slug), logoAssetId: String(input.logoAssetId || "") || undefined, label: String(input.label || "").trim() || undefined, scanCount: 0, createdAt: new Date().toISOString() };
+        qrCodes.set(qr.id, qr); persist(); audit("qr.created", requestId, { profileId: profile.id, qrId: qr.id, actorId: userId });
+        return json(res, 201, { qr: { ...qr, url: qrUrl(qr.id) } });
+      }
+    }
+    const qrAnalyticsId = path.match(/^\/qr\/([^/]+)\/analytics$/)?.[1];
+    if (req.method === "GET" && qrAnalyticsId) {
+      const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", code: "unauthenticated", requestId });
+      const qr = qrCodes.get(qrAnalyticsId); const profile = qr && profiles.get(qr.profileId);
+      if (!qr) return json(res, 404, { error: "Không tìm thấy mã QR", code: "qr_not_found", requestId });
+      if (!profile || profile.ownerId !== userId) return json(res, 403, { error: "Bạn không có quyền xem mã QR này", code: "forbidden", requestId });
+      return json(res, 200, { analytics: { id: qr.id, scanCount: qr.scanCount, lastScannedAt: qr.lastScannedAt || null } }, { "Cache-Control": "no-store" });
+    }
+    const qrId = path.match(/^\/qr\/([^/]+)$/)?.[1];
+    if (req.method === "GET" && qrId) {
+      const qr = qrCodes.get(qrId);
+      if (!qr || qr.revokedAt) return json(res, 404, { error: "Mã QR không tồn tại hoặc đã bị thu hồi", code: "qr_not_found", requestId });
+      qr.scanCount += 1;
+      qr.lastScannedAt = new Date().toISOString();
+      persist();
+      res.writeHead(302, { Location: qr.targetUrl, "Cache-Control": "no-store" }); return res.end();
+    }
+    if (req.method === "PATCH" && qrId) {
+      const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", code: "unauthenticated", requestId });
+      const qr = qrCodes.get(qrId);
+      if (!qr) return json(res, 404, { error: "Không tìm thấy mã QR", code: "qr_not_found", requestId });
+      const profile = profiles.get(qr.profileId);
+      if (!profile || profile.ownerId !== userId) return json(res, 403, { error: "Bạn không có quyền thay đổi mã QR này", code: "forbidden", requestId });
+      const input = await readBody(req);
+      if (typeof input.label === "string") qr.label = input.label.trim() || undefined;
+      if ("active" in input) qr.revokedAt = input.active === false ? new Date().toISOString() : undefined;
+      persist(); audit("qr.updated", requestId, { profileId: qr.profileId, qrId: qr.id, actorId: userId, active: !qr.revokedAt });
+      return json(res, 200, { qr });
+    }
+    const wallpaperProfileId = path.match(/^\/profiles\/([^/]+)\/qr-wallpaper$/)?.[1];
+    if (req.method === "GET" && wallpaperProfileId) {
+      const userId = bearer(req); if (!userId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", code: "unauthenticated", requestId });
+      const profile = profiles.get(wallpaperProfileId);
+      if (!profile) return json(res, 404, { error: "Không tìm thấy hồ sơ", code: "profile_not_found", requestId });
+      if (profile.ownerId !== userId) return json(res, 403, { error: "Bạn không có quyền tải QR của hồ sơ này", code: "forbidden", requestId });
+      const qr = [...qrCodes.values()].filter((candidate) => candidate.profileId === profile.id && !candidate.revokedAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+      const target = qr ? qrUrl(qr.id) : profileUrl(profile.slug);
+      const svg = await QRCode.toString(target, { type: "svg", width: 1200, margin: 4, errorCorrectionLevel: "H" });
+      res.writeHead(200, { "Content-Type": "image/svg+xml; charset=utf-8", "Content-Disposition": `attachment; filename="${profile.slug}-qr-wallpaper.svg"`, "Cache-Control": "private, no-store" }); return res.end(svg);
+    }
     const jobId = path.match(/^\/jobs\/([^/]+)$/)?.[1];
     if (req.method === "GET" && jobId) {
       const ownerId = bearer(req); if (!ownerId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
@@ -148,12 +210,12 @@ const server = createServer(async (req, res) => {
       const requesterId = bearer(req); if (!requesterId) return json(res, 401, { error: "Vui lòng đăng nhập để gửi yêu cầu", requestId });
       if (!db) return json(res, 503, { error: "Database chưa được cấu hình", requestId });
       const input = await readBody(req);
-      const slug = String(input.slug || "").trim(); if (!slug) return json(res, 400, { error: "Thiếu hồ sơ đích", requestId });
+      const slug = String(input.slug || "").trim(); if (!slug) return json(res, 400, { error: "Thiếu hồ sơ đích", code: "missing_slug", requestId });
       const ownerProfile = [...profiles.values()].find((p) => p.slug === slug && p.isPublic);
-      if (!ownerProfile?.ownerId) return json(res, 404, { error: "Không tìm thấy hồ sơ công khai", requestId });
-      if (ownerProfile.ownerId === requesterId) return json(res, 400, { error: "Bạn không thể gửi yêu cầu cho chính mình", requestId });
+      if (!ownerProfile?.ownerId) return json(res, 404, { error: "Không tìm thấy hồ sơ công khai", code: "profile_not_found", requestId });
+      if (ownerProfile.ownerId === requesterId) return json(res, 400, { error: "Bạn không thể gửi yêu cầu cho chính mình", code: "self_request", requestId });
       const requesterProfile = [...profiles.values()].find((p) => p.ownerId === requesterId);
-      if (!requesterProfile) return json(res, 400, { error: "Bạn cần tạo hồ sơ trước khi kết nối", requestId });
+      if (!requesterProfile) return json(res, 400, { error: "Bạn cần tạo hồ sơ trước khi kết nối", code: "profile_required", requestId });
       try {
         const reqRow = await db.query(`INSERT INTO "ContactRequest" ("id","requesterId","ownerId","status","updatedAt") VALUES ($1,$2,$3,'pending',now()) ON CONFLICT ("requesterId","ownerId") DO UPDATE SET "status"='pending',"updatedAt"=now() RETURNING *`, [randomUUID(), requesterProfile.id, ownerProfile.id]);
         await db.query(`INSERT INTO "Notification" ("id","userId","type","title","message") VALUES ($1,$2,'contact_request','Yêu cầu kết nối danh bạ', $3)`, [randomUUID(), ownerProfile.ownerId, `${requesterProfile.displayName} muốn kết nối với bạn.`]);
