@@ -70,7 +70,8 @@ export default function DashboardClient() {
   const [busy, setBusy] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState("");
-  const token = typeof window !== "undefined" ? localStorage.getItem("novacard_token") : null;
+  const [token, setToken] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [next, setNext] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,6 +79,8 @@ export default function DashboardClient() {
     const target = params.get("next");
     if (target?.startsWith("/")) setNext(target);
     if (params.get("reason") === "profile_required") setMessage("Tạo hồ sơ của bạn để có thể gửi yêu cầu kết nối. Sau khi tạo xong bạn sẽ được đưa lại trang hồ sơ cần kết nối.");
+    setToken(localStorage.getItem("novacard_token"));
+    setAuthChecked(true);
   }, []);
 
   useEffect(() => {
@@ -86,6 +89,7 @@ export default function DashboardClient() {
   }, [editing, profile, tab]);
 
   useEffect(() => {
+    if (!authChecked) return;
     if (!token) { window.location.replace(next ? `/auth?next=${encodeURIComponent(next)}` : "/auth"); return; }
     const headers = { Authorization: `Bearer ${token}` };
     void fetch("/api/auth/me", { headers }).then(async (response) => {
@@ -97,7 +101,7 @@ export default function DashboardClient() {
       if (savedContacts.ok) { const data = await savedContacts.json(); setContacts((data.contacts || []).map(readContact)); }
       if (sent.ok) { const data = await sent.json(); setSentRequests(data.requests || []); }
     });
-  }, [token, next]);
+  }, [authChecked, token, next]);
 
   const reloadContacts = async () => {
     if (!token) return;
