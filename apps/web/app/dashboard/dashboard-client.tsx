@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, ArrowUpRight, CheckCircle2, Clock, FileText, LogOut, Mail, Phone, Plus, QrCode, ScanLine, Search, ShieldCheck, Trash2, UserRound, XCircle } from "lucide-react";
+import { AlertCircle, ArrowUpRight, CheckCircle2, Clock, FileText, LogOut, Mail, Phone, Plus, QrCode, ScanLine, Search, Trash2, UserRound, XCircle } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import OcrPanel from "./ocr-panel";
 import NotificationsPanel from "./notifications-panel";
@@ -115,7 +115,7 @@ export default function DashboardClient() {
 
   const contactRows: ContactRow[] = [
     ...contacts.map((contact) => ({ key: `saved-${contact.id}`, id: contact.id, status: "saved" as const, displayName: contact.displayName, title: contact.title, organization: contact.organization, email: contact.email, phone: contact.phone, website: contact.website, createdAt: contact.createdAt, deletable: true })),
-    ...sentRequests.map((request) => ({ key: `pending-${request.id}`, id: request.id, status: "pending" as const, displayName: request.ownerName, title: request.ownerTitle, organization: request.ownerOrganization, email: request.ownerEmail, phone: request.ownerPhone, createdAt: request.createdAt, deletable: false })),
+    ...sentRequests.filter((request) => request.status === "pending").map((request) => ({ key: `pending-${request.id}`, id: request.id, status: "pending" as const, displayName: request.ownerName, title: request.ownerTitle, organization: request.ownerOrganization, email: request.ownerEmail, phone: request.ownerPhone, createdAt: request.createdAt, deletable: false })),
   ];
   const visibleContacts = contactRows
     .filter((contact) => `${contact.displayName} ${contact.title || ""} ${contact.organization || ""} ${contact.email || ""} ${contact.phone || ""}`.toLowerCase().includes(contactQuery.toLowerCase().trim()))
@@ -172,7 +172,7 @@ export default function DashboardClient() {
 
   return <div className="dashboard-shell">
     <header className="dashboard-top">
-      <a className="brand" href="/dashboard"><span className="brand-mark"><ShieldCheck size={16} /></span>NovaCard</a>
+      <a className="brand" href="/dashboard"><img className="brand-logo" src="https://chatbot.novatechhp.vn/template-assets/CORPORATE_BASE/logo.png" alt="Novatech" />NovaCard</a>
       <div className="top-actions">
         <span className="user-pill"><UserRound size={15} /> {user?.email || "Tài khoản cá nhân"}</span>
         <button className="ghost-button" onClick={() => { localStorage.removeItem("novacard_token"); window.location.href = "/auth"; }}><LogOut size={15} /> Đăng xuất</button>
