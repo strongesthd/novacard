@@ -113,9 +113,12 @@ export default function DashboardClient() {
     if (response.ok) { setContacts((items) => items.filter((item) => item.id !== contact.id)); setSelectedContact(null); }
   };
 
+  const savedNames = new Set(contacts.map((contact) => contact.displayName.trim().toLowerCase()));
   const contactRows: ContactRow[] = [
     ...contacts.map((contact) => ({ key: `saved-${contact.id}`, id: contact.id, status: "saved" as const, displayName: contact.displayName, title: contact.title, organization: contact.organization, email: contact.email, phone: contact.phone, website: contact.website, createdAt: contact.createdAt, deletable: true })),
-    ...sentRequests.filter((request) => request.status === "pending").map((request) => ({ key: `pending-${request.id}`, id: request.id, status: "pending" as const, displayName: request.ownerName, title: request.ownerTitle, organization: request.ownerOrganization, email: request.ownerEmail, phone: request.ownerPhone, createdAt: request.createdAt, deletable: false })),
+    ...sentRequests
+      .filter((request) => request.status === "pending" && !savedNames.has((request.ownerName || "").trim().toLowerCase()))
+      .map((request) => ({ key: `pending-${request.id}`, id: request.id, status: "pending" as const, displayName: request.ownerName, title: request.ownerTitle, organization: request.ownerOrganization, email: request.ownerEmail, phone: request.ownerPhone, createdAt: request.createdAt, deletable: false })),
   ];
   const visibleContacts = contactRows
     .filter((contact) => `${contact.displayName} ${contact.title || ""} ${contact.organization || ""} ${contact.email || ""} ${contact.phone || ""}`.toLowerCase().includes(contactQuery.toLowerCase().trim()))
