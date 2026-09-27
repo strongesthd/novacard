@@ -1,6 +1,7 @@
 module.exports = {
   output: "standalone",
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${process.env.API_INTERNAL_URL || "http://api:4000"}/:path*` }];
+    const apiUrl = process.env.API_INTERNAL_URL || "http://localhost:4000";
+    return [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }];
   }
 };
