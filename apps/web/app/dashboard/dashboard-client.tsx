@@ -235,6 +235,7 @@ export default function DashboardClient() {
                 <label>Email<input name="email" type="email" defaultValue={profile?.email} placeholder="hello@company.com" /></label>
                 <label>Số điện thoại<input name="phone" defaultValue={profile?.phone} placeholder="+84…" /></label>
               </div>
+              <label>Website<input name="website" defaultValue={profile?.website} placeholder="https://congty.vn" /></label>
               <label>Giới thiệu ngắn<input name="bio" defaultValue={profile?.bio} placeholder="Kết nối chuyên nghiệp…" /></label>
               <label>Logo công ty<input type="file" accept="image/png,image/jpeg,image/svg+xml" disabled /><small className="form-help">Tính năng tải logo sẽ được bổ sung ở phiên bản tiếp theo.</small></label>
               <button className="primary-cta" disabled={busy}>{busy ? "Đang lưu…" : "Lưu thông tin"}<ArrowUpRight size={17} /></button>
