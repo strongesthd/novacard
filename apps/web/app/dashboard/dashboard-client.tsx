@@ -61,6 +61,7 @@ export default function DashboardClient() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [qrScans, setQrScans] = useState(0);
   const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
   const [contactQuery, setContactQuery] = useState("");
   const [contactSort, setContactSort] = useState<"newest" | "name">("newest");
@@ -97,7 +98,18 @@ export default function DashboardClient() {
       const me = await response.json();
       setUser(me.user);
       const [profiles, savedContacts, sent] = await Promise.all([fetch("/api/profiles", { headers }), fetch("/api/contacts", { headers }), fetch("/api/contact-requests/sent", { headers })]);
-      if (profiles.ok) { const data = await profiles.json(); setProfile(data.profiles?.[data.profiles.length - 1] || null); }
+      if (profiles.ok) {
+        const data = await profiles.json();
+        const own = data.profiles?.[data.profiles.length - 1] || null;
+        setProfile(own);
+        if (own) {
+          const qrResponse = await fetch(`/api/profiles/${encodeURIComponent(own.id)}/qr`, { headers });
+          if (qrResponse.ok) {
+            const qrs = (await qrResponse.json()).qrs as { scanCount?: number }[] | undefined;
+            setQrScans((qrs || []).reduce((total, qr) => total + Number(qr.scanCount || 0), 0));
+          }
+        }
+      }
       if (savedContacts.ok) { const data = await savedContacts.json(); setContacts((data.contacts || []).map(readContact)); }
       if (sent.ok) { const data = await sent.json(); setSentRequests(data.requests || []); }
     });
@@ -245,7 +257,7 @@ export default function DashboardClient() {
         </section>
         {profile && <div className="dashboard-overview-metrics metric-grid">
           <div className="metric-card"><span className="metric-icon blue"><UserRound size={18} /></span><strong>1</strong><span>Hồ sơ đang hoạt động</span></div>
-          <div className="metric-card"><span className="metric-icon violet"><QrCode size={18} /></span><strong>0</strong><span>Lượt quét QR</span></div>
+          <div className="metric-card"><span className="metric-icon violet"><QrCode size={18} /></span><strong>{qrScans}</strong><span>Lượt quét QR</span></div>
           <div className="metric-card"><span className="metric-icon green"><FileText size={18} /></span><strong>{contacts.length}</strong><span>Liên hệ đã lưu</span></div>
         </div>}
       </>}
