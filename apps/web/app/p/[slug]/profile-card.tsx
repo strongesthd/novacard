@@ -120,6 +120,21 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
     link.remove();
   };
 
+  const downloadWallpaper = async () => {
+    const token = localStorage.getItem("novacard_token");
+    if (!token) return;
+    const response = await fetch(`/api/profiles/${encodeURIComponent(profile.id)}/qr-wallpaper`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) { setSaveMessage("Không thể tải QR wallpaper"); return; }
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${slug}-qr-wallpaper.svg`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+  };
+
   const initials = profile.displayName.split(" ").slice(-2).map((part) => part[0]).join("").toUpperCase();
   const actionItems = [
     { href: profile.phone ? `tel:${profile.phone}` : "#", label: "GỌI ĐIỆN", icon: Phone, show: Boolean(profile.phone) },
@@ -151,9 +166,9 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
     <section className="reference-actions">{actionItems.filter((item) => item.show).map(({ href, label, icon: Icon, external }) => <a key={label} href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}><Icon size={16} /><span>{label}</span>{external && <ExternalLink size={11} />}</a>)}</section>
     <div className="reference-save-row"><a href={`/api/p/${encodeURIComponent(slug)}/vcard`}><Download size={16} /> LƯU DANH BẠ <small>File .vcf</small></a>{connectAction}</div>
     {saveMessage && <p className="reference-save-message">{saveMessage}</p>}
-    <section className="reference-section"><h2>HỒ SƠ CÁ NHÂN &amp; DOANH NGHIỆP</h2><a href={profile.companyProfileUrl || profile.website || "#"} target={profile.companyProfileUrl || profile.website ? "_blank" : undefined} rel={profile.companyProfileUrl || profile.website ? "noreferrer" : undefined}><Link2 size={16} /> PROFILE CÔNG TY <ExternalLink size={12} /></a><a href={profile.projectsUrl || "#projects"} target={profile.projectsUrl ? "_blank" : undefined} rel={profile.projectsUrl ? "noreferrer" : undefined}><BriefcaseBusiness size={16} /> DỰ ÁN TIÊU BIỂU <ExternalLink size={12} /></a><div className="reference-community"><Users size={16} /><div><strong>THÔNG TIN HỘI</strong><p>{profile.communityInfo || "Chưa cập nhật thông tin hội."}</p></div></div></section>
+    <section className="reference-section"><h2>HỒ SƠ CÁ NHÂN &amp; DOANH NGHIỆP</h2>{(profile.companyProfileUrl || profile.website) ? <a href={profile.companyProfileUrl || profile.website} target="_blank" rel="noreferrer"><Link2 size={16} /> PROFILE CÔNG TY <ExternalLink size={12} /></a> : <span className="reference-section-empty"><Link2 size={16} /> PROFILE CÔNG TY <small>Chưa cập nhật</small></span>}{profile.projectsUrl ? <a href={profile.projectsUrl} target="_blank" rel="noreferrer"><BriefcaseBusiness size={16} /> DỰ ÁN TIÊU BIỂU <ExternalLink size={12} /></a> : <span className="reference-section-empty"><BriefcaseBusiness size={16} /> DỰ ÁN TIÊU BIỂU <small>Chưa cập nhật</small></span>}<div className="reference-community"><Users size={16} /><div><strong>THÔNG TIN HỘI</strong><p>{profile.communityInfo || "Chưa cập nhật thông tin hội."}</p></div></div></section>
     <section className="reference-connect" id="social"><button type="button" onClick={() => setTab("qr")}><span>QUÉT MÃ QR KẾT NỐI</span>{qrDataUrl ? <img src={qrDataUrl} alt="Mã QR hồ sơ" /> : <QrCode size={60} />}</button></section>
-    {tab === "qr" && <div className="reference-qr-panel"><img src={qrDataUrl} alt="Mã QR hồ sơ" /><p>Quét để mở hồ sơ này trên điện thoại</p><button type="button" onClick={downloadQr}>Tải ảnh QR</button></div>}
+    {tab === "qr" && <div className="reference-qr-panel"><img src={qrDataUrl} alt="Mã QR hồ sơ" /><p>Quét để mở hồ sơ này trên điện thoại</p><div className="reference-qr-actions"><button type="button" onClick={downloadQr}>Tải ảnh QR</button>{isOwner && <button type="button" onClick={downloadWallpaper}>Tải QR wallpaper</button>}</div></div>}
     <footer className="reference-footer"><span>© NovaCard · Novatech</span><button type="button" onClick={share}>{shared ? <Check size={13} /> : <Share2 size={13} />} {shared ? "Đã sao chép" : "Chia sẻ"}</button></footer>
   </main>;
 }
