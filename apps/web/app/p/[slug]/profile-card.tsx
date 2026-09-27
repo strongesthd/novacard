@@ -110,7 +110,8 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
   };
 
   const downloadQr = async () => {
-    const dataUrl = await QRCode.toDataURL(profileUrl, { width: 900, margin: 3, errorCorrectionLevel: "H" });
+    // Download the same tracked URL shown on screen so scans are counted.
+    const dataUrl = await QRCode.toDataURL(qrValue, { width: 900, margin: 3, errorCorrectionLevel: "H" });
     const link = document.createElement("a");
     link.href = dataUrl;
     link.download = `${slug}-ma-qr.png`;
