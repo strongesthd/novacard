@@ -77,6 +77,7 @@ model Profile {
   bio String?
   email String?
   phone String?
+  avatarUrl String?
   website String?
   companyProfileUrl String?
   projectsUrl String?

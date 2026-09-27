@@ -10,6 +10,8 @@ export default function NotificationsPanel({ token, onContactsChanged }: { token
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
   const [requests, setRequests] = useState<ContactRequest[]>([]);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     const headers = { Authorization: `Bearer ${token}` };
@@ -30,11 +32,16 @@ export default function NotificationsPanel({ token, onContactsChanged }: { token
   };
 
   const respond = async (id: string, action: "accept" | "reject") => {
-    const response = await fetch(`/api/contact-requests/${encodeURIComponent(id)}/${action}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-    if (!response.ok) return;
-    setRequests((prev) => prev.map((request) => (request.id === id ? { ...request, status: action === "accept" ? "accepted" : "rejected" } : request)));
-    if (action === "accept") onContactsChanged();
-    void load();
+    if (respondingId) return;
+    setRespondingId(id); setError("");
+    try {
+      const response = await fetch(`/api/contact-requests/${encodeURIComponent(id)}/${action}`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) { setError(body.error || "Không thể xử lý yêu cầu kết nối"); return; }
+      setRequests((prev) => prev.filter((request) => request.id !== id));
+      if (action === "accept") onContactsChanged();
+      await load();
+    } catch { setError("Không thể kết nối đến máy chủ"); } finally { setRespondingId(null); }
   };
 
   return <div className="notifications">
@@ -44,12 +51,13 @@ export default function NotificationsPanel({ token, onContactsChanged }: { token
     </button>
     {open && <div className="notification-popover">
       <div className="notification-head"><strong>Yêu cầu kết nối</strong><button type="button" onClick={() => setOpen(false)} aria-label="Đóng"><X size={15} /></button></div>
+      {error && <p className="notification-error" role="alert">{error}</p>}
       {pending.length > 0 && <div className="notification-section">
         {pending.map((request) => <div className="notification-row" key={request.id}>
           <div><strong>{request.requesterName}</strong><span>{request.requesterEmail || "muốn kết nối với bạn"}</span></div>
           <div className="notification-actions">
-            <button type="button" className="accept" onClick={() => respond(request.id, "accept")} aria-label="Chấp nhận"><Check size={15} /></button>
-            <button type="button" className="reject" onClick={() => respond(request.id, "reject")} aria-label="Từ chối"><X size={15} /></button>
+            <button type="button" className="accept" onClick={() => void respond(request.id, "accept")} disabled={respondingId !== null} aria-label="Chấp nhận"><Check size={15} /></button>
+            <button type="button" className="reject" onClick={() => void respond(request.id, "reject")} disabled={respondingId !== null} aria-label="Từ chối"><X size={15} /></button>
           </div>
         </div>)}
       </div>}

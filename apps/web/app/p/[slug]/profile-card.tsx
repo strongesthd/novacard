@@ -122,7 +122,7 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
   const connectAction = viewer.loading
     ? <span className="reference-save-hint">Đang kiểm tra hồ sơ</span>
     : isOwner
-      ? <span className="reference-save-hint">Đây là hồ sơ của bạn</span>
+      ? null
       : !viewer.authenticated
         ? <a className="reference-save-cta" href={connectHref}><UserPlus size={16} /> ĐĂNG NHẬP ĐỂ KẾT NỐI<small>Đăng nhập NovaCard trước</small></a>
         : !viewer.hasProfile
@@ -132,13 +132,13 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
   return <main className="reference-profile-card">
     <header className="reference-brand"><img className="reference-logo" src="https://chatbot.novatechhp.vn/template-assets/CORPORATE_BASE/logo.png" alt="Novatech" /><div><strong>novatechhp.vn</strong><span className="reference-tagline">Giải pháp công nghệ và chuyển đổi số đồng hành cùng doanh nghiệp</span></div></header>
     <section className="reference-hero">
-      <div className="reference-avatar">{initials}<span><Check size={13} strokeWidth={3} /></span></div>
+      <div className="reference-avatar">{profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.displayName} /> : initials}<span><Check size={13} strokeWidth={3} /></span></div>
       <div className="reference-identity"><h1>{profile.displayName}</h1><p>{profile.title || "Chức danh"}</p><small>{profile.organization || "Doanh nghiệp"}</small></div>
     </section>
     <section className="reference-actions">{actionItems.filter((item) => item.show).map(({ href, label, icon: Icon, external }) => <a key={label} href={href} target={external ? "_blank" : undefined} rel={external ? "noreferrer" : undefined}><Icon size={16} /><span>{label}</span>{external && <ExternalLink size={11} />}</a>)}</section>
     <div className="reference-save-row"><a href={`/api/p/${encodeURIComponent(slug)}/vcard`}><Download size={16} /> LƯU DANH BẠ <small>File .vcf</small></a>{connectAction}</div>
     {saveMessage && <p className="reference-save-message">{saveMessage}</p>}
-    <section className="reference-section"><h2>HỒ SƠ CÁ NHÂN &amp; DOANH NGHIỆP</h2>{profile.companyProfileUrl && <a href={profile.companyProfileUrl} target="_blank" rel="noreferrer"><Link2 size={16} /> PROFILE CÔNG TY <ExternalLink size={12} /></a>}{profile.projectsUrl && <a href={profile.projectsUrl} target="_blank" rel="noreferrer"><BriefcaseBusiness size={16} /> DỰ ÁN TIÊU BIỂU <ExternalLink size={12} /></a>}{profile.communityInfo && <div className="reference-community"><Users size={16} /><div><strong>THÔNG TIN HỘI</strong><p>{profile.communityInfo}</p></div></div>}</section>
+    <section className="reference-section"><h2>HỒ SƠ CÁ NHÂN &amp; DOANH NGHIỆP</h2><a href={profile.companyProfileUrl || profile.website || "#"} target={profile.companyProfileUrl || profile.website ? "_blank" : undefined} rel={profile.companyProfileUrl || profile.website ? "noreferrer" : undefined}><Link2 size={16} /> PROFILE CÔNG TY <ExternalLink size={12} /></a><a href={profile.projectsUrl || "#projects"} target={profile.projectsUrl ? "_blank" : undefined} rel={profile.projectsUrl ? "noreferrer" : undefined}><BriefcaseBusiness size={16} /> DỰ ÁN TIÊU BIỂU <ExternalLink size={12} /></a><div className="reference-community"><Users size={16} /><div><strong>THÔNG TIN HỘI</strong><p>{profile.communityInfo || "Chưa cập nhật thông tin hội."}</p></div></div></section>
     <section className="reference-connect" id="social"><button type="button" onClick={() => setTab("qr")}><span>QUÉT MÃ QR KẾT NỐI</span>{qrDataUrl ? <img src={qrDataUrl} alt="Mã QR hồ sơ" /> : <QrCode size={60} />}</button></section>
     {tab === "qr" && <div className="reference-qr-panel"><img src={qrDataUrl} alt="Mã QR hồ sơ" /><p>Quét để mở hồ sơ này trên điện thoại</p><button type="button" onClick={downloadQr}>Tải ảnh QR</button></div>}
     <footer className="reference-footer"><span>© NovaCard · Novatech</span><button type="button" onClick={share}>{shared ? <Check size={13} /> : <Share2 size={13} />} {shared ? "Đã sao chép" : "Chia sẻ"}</button></footer>
