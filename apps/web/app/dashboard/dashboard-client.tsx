@@ -292,14 +292,14 @@ export default function DashboardClient() {
           <span className={`contact-status ${selectedContact.status}`} title={selectedContact.status === "saved" ? "Đã lưu" : "Chờ phản hồi"}>{selectedContact.status === "saved" ? <CheckCircle2 size={16} /> : <Clock size={16} />}</span>
         </div>
         <dl className="contact-detail-info">
-          <div><dt>Email</dt><dd>{selectedContact.email || "Chưa cập nhật"}</dd></div>
-          <div><dt>Điện thoại</dt><dd>{selectedContact.phone || "Chưa cập nhật"}</dd></div>
+          <div><dt>Email</dt><dd>{selectedContact.email || (selectedContact.status === "pending" ? "Ẩn đến khi được chấp nhận" : "Chưa cập nhật")}</dd></div>
+          <div><dt>Điện thoại</dt><dd>{selectedContact.phone || (selectedContact.status === "pending" ? "Ẩn đến khi được chấp nhận" : "Chưa cập nhật")}</dd></div>
           <div><dt>Website</dt><dd>{selectedContact.website || "Chưa cập nhật"}</dd></div>
           <div><dt>Trạng thái</dt><dd>{selectedContact.status === "saved" ? "Đã lưu vào danh bạ" : "Đã gửi yêu cầu, chờ phản hồi"}</dd></div>
         </dl>
         <div className="contact-detail-actions">
-          <a className="secondary-button" href={selectedContact.phone ? `tel:${selectedContact.phone}` : "#"}><Phone size={15} /> Gọi</a>
-          <a className="secondary-button" href={selectedContact.email ? `mailto:${selectedContact.email}` : "#"}><Mail size={15} /> Email</a>
+          {selectedContact.phone && <a className="secondary-button" href={`tel:${selectedContact.phone}`}><Phone size={15} /> Gọi</a>}
+          {selectedContact.email && <a className="secondary-button" href={`mailto:${selectedContact.email}`}><Mail size={15} /> Email</a>}
           {selectedContact.deletable && <button type="button" className="danger-button" onClick={() => void deleteContact(selectedContact)}><Trash2 size={15} /> Xóa</button>}
           <button type="button" className="ghost-button" onClick={() => setSelectedContact(null)}><XCircle size={15} /> Đóng</button>
         </div>

@@ -302,11 +302,14 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === "GET" && path === "/contact-requests/sent") {
       const requesterUserId = bearer(req); if (!requesterUserId) return json(res, 401, { error: "Vui lòng đăng nhập để tiếp tục", requestId });
+      // Only reveal the owner's contact details after they accept; a pending
+      // request must not expose email/phone before consent.
       const rows = db
-        ? (await db.query(`SELECT cr."id", cr."status", cr."createdAt", o."slug" AS "ownerSlug", o."displayName" AS "ownerName", o."title" AS "ownerTitle", o."organization" AS "ownerOrganization", o."email" AS "ownerEmail", o."phone" AS "ownerPhone" FROM "ContactRequest" cr JOIN "Profile" requester ON requester."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE requester."userId"=$1 ORDER BY cr."createdAt" DESC`, [requesterUserId])).rows
+        ? (await db.query(`SELECT cr."id", cr."status", cr."createdAt", o."slug" AS "ownerSlug", o."displayName" AS "ownerName", o."title" AS "ownerTitle", o."organization" AS "ownerOrganization", CASE WHEN cr."status"='accepted' THEN o."email" END AS "ownerEmail", CASE WHEN cr."status"='accepted' THEN o."phone" END AS "ownerPhone" FROM "ContactRequest" cr JOIN "Profile" requester ON requester."id"=cr."requesterId" JOIN "Profile" o ON o."id"=cr."ownerId" WHERE requester."userId"=$1 ORDER BY cr."createdAt" DESC`, [requesterUserId])).rows
         : [...contactRequestStore.values()].filter((request) => profiles.get(request.requesterId)?.ownerId === requesterUserId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((request) => {
           const owner = profiles.get(request.ownerId);
-          return { id: request.id, status: request.status, createdAt: request.createdAt, ownerSlug: owner?.slug || "", ownerName: owner?.displayName || "", ownerTitle: owner?.title || "", ownerOrganization: owner?.organization || "", ownerEmail: owner?.email || "", ownerPhone: owner?.phone || "" };
+          const accepted = request.status === "accepted";
+          return { id: request.id, status: request.status, createdAt: request.createdAt, ownerSlug: owner?.slug || "", ownerName: owner?.displayName || "", ownerTitle: owner?.title || "", ownerOrganization: owner?.organization || "", ownerEmail: accepted ? owner?.email || "" : "", ownerPhone: accepted ? owner?.phone || "" : "" };
         });
       return json(res, 200, { requests: rows });
     }
