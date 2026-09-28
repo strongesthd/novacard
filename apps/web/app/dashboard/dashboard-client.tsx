@@ -79,6 +79,7 @@ export default function DashboardClient() {
     const params = new URLSearchParams(window.location.search);
     const target = params.get("next");
     if (target?.startsWith("/")) setNext(target);
+    if (params.get("tab") === "contacts") setTab("contacts");
     if (params.get("reason") === "profile_required") setMessage("Tạo hồ sơ của bạn để có thể gửi yêu cầu kết nối. Sau khi tạo xong bạn sẽ được đưa lại trang hồ sơ cần kết nối.");
     setToken(localStorage.getItem("novacard_token"));
     setAuthChecked(true);

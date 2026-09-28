@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BriefcaseBusiness, Check, Download, ExternalLink, FileText, Link2, Mail, MessageCircle, Phone, QrCode, Share2, UserPlus, Users } from "lucide-react";
+import { BriefcaseBusiness, Check, Download, ExternalLink, FileText, LayoutDashboard, Link2, LogIn, LogOut, Mail, MessageCircle, Phone, QrCode, Share2, UserPlus, Users } from "lucide-react";
 import QRCode from "qrcode";
 
 type Profile = Record<string, string>;
 
-type Viewer = { authenticated: boolean; hasProfile: boolean; ownSlug: string | null; loading: boolean };
+type Viewer = { authenticated: boolean; hasProfile: boolean; ownSlug: string | null; loading: boolean; email?: string };
 type StoredQr = { targetUrl: string; url?: string; revokedAt?: string };
 
 export default function ProfileCard({ profile, slug, isOwnProfile = false }: { profile: Profile; slug: string; isOwnProfile?: boolean }) {
@@ -16,6 +16,7 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
   const [shared, setShared] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [requestStatus, setRequestStatus] = useState<"pending" | "accepted" | "rejected" | null>(null);
+  const [accountEmail, setAccountEmail] = useState("");
   const [viewer, setViewer] = useState<Viewer>({ authenticated: isOwnProfile, hasProfile: isOwnProfile, ownSlug: isOwnProfile ? slug : null, loading: !isOwnProfile });
   // The card is also rendered inside /dashboard. Always encode the public
   // profile route so a QR created there never points back to the dashboard.
@@ -39,6 +40,16 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
   }, [qrValue]);
 
   useEffect(() => {
+    const token = localStorage.getItem("novacard_token");
+    if (!token) return;
+    void fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } }).then(async (response) => {
+      if (!response.ok) return;
+      const data = await response.json() as { user?: { email?: string } };
+      setAccountEmail(data.user?.email || "");
+    }).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
     if (isOwnProfile) return;
     const token = localStorage.getItem("novacard_token");
     if (!token) {
@@ -54,7 +65,7 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
         return;
       }
       const own = (await response.json()).profiles as { id: string; slug: string }[] | undefined;
-      if (active) setViewer({ authenticated: true, hasProfile: Boolean(own?.length), ownSlug: own?.find((candidate) => candidate.slug === slug)?.slug ?? null, loading: false });
+      if (active) setViewer({ authenticated: true, hasProfile: Boolean(own?.length), ownSlug: own?.find((candidate) => candidate.slug === slug)?.slug ?? null, loading: false, email: accountEmail });
       if (own?.length) {
         const sentResponse = await fetch("/api/contact-requests/sent", { headers: { Authorization: `Bearer ${token}` } });
         if (sentResponse.ok) {
@@ -79,10 +90,11 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
       if (active) setViewer((current) => ({ ...current, loading: false }));
     });
     return () => { active = false; };
-  }, [isOwnProfile, slug]);
+  }, [isOwnProfile, slug, accountEmail]);
 
   const isOwner = viewer.ownSlug === slug;
   const connectHref = !viewer.authenticated ? `/auth?next=${encodeURIComponent(profilePath)}` : `/dashboard?next=${encodeURIComponent(profilePath)}`;
+  const signOut = () => { localStorage.removeItem("novacard_token"); window.location.href = "/"; };
 
   const requestConnection = async () => {
     const token = localStorage.getItem("novacard_token");
@@ -150,7 +162,7 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
       : requestStatus === "pending"
         ? <span className="reference-save-hint">Đã gửi yêu cầu · Chờ chấp nhận</span>
         : requestStatus === "accepted"
-          ? <span className="reference-save-hint">Đã kết nối</span>
+          ? <a className="reference-save-cta" href="/dashboard?tab=contacts"><Check size={16} /> ĐÃ KẾT NỐI<small>Mở danh bạ để xem</small></a>
           : !viewer.authenticated
             ? <a className="reference-save-cta" href={connectHref}><UserPlus size={16} /> ĐĂNG NHẬP ĐỂ KẾT NỐI<small>Đăng nhập NovaCard trước</small></a>
             : !viewer.hasProfile
@@ -158,6 +170,7 @@ export default function ProfileCard({ profile, slug, isOwnProfile = false }: { p
               : <button type="button" onClick={requestConnection} disabled={requesting}><UserPlus size={16} /> {requesting ? "ĐANG GỬI" : "LƯU VÀO NOVACARD"}<small>Gửi yêu cầu kết nối</small></button>;
 
   return <main className="reference-profile-card">
+    <nav className="reference-account-bar"><a href="/" className="reference-account-home">NovaCard</a>{accountEmail ? <><span className="reference-account-user">Đang đăng nhập: <strong>{accountEmail}</strong></span><a href="/dashboard?tab=contacts" className="reference-account-link"><LayoutDashboard size={14} /> Danh bạ</a><button type="button" className="reference-account-link" onClick={signOut}><LogOut size={14} /> Thoát</button></> : <a href={connectHref} className="reference-account-link"><LogIn size={14} /> Đăng nhập</a>}</nav>
     <header className="reference-brand"><img className="reference-logo" src="https://chatbot.novatechhp.vn/template-assets/CORPORATE_BASE/logo.png" alt="Novatech" /><div><strong>novatechhp.vn</strong><span className="reference-tagline">Giải pháp công nghệ và chuyển đổi số đồng hành cùng doanh nghiệp</span></div></header>
     <section className="reference-hero">
       <div className="reference-avatar">{profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.displayName} /> : initials}<span><Check size={13} strokeWidth={3} /></span></div>
