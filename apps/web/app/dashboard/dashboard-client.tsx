@@ -146,7 +146,24 @@ export default function DashboardClient() {
     if (!valid) return reject(new Error(type === "pdf" ? "Chỉ nhận file PDF" : "Chỉ nhận ảnh JPG, PNG hoặc WEBP"));
     if (file.size > (type === "pdf" ? 8 : 10) * 1024 * 1024) return reject(new Error(`File ${type === "pdf" ? "PDF" : "ảnh"} vượt quá dung lượng cho phép`));
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
+    reader.onload = () => {
+      if (type === "pdf") { resolve(String(reader.result)); return; }
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 1200 / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) { reject(new Error("Không thể xử lý ảnh")); return; }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.78);
+        if (compressed.length > 1_500_000) { reject(new Error("Ảnh đại diện vẫn quá lớn sau khi nén. Hãy chọn ảnh nhỏ hơn.")); return; }
+        resolve(compressed);
+      };
+      image.onerror = () => reject(new Error("Không thể đọc ảnh"));
+      image.src = String(reader.result);
+    };
     reader.onerror = () => reject(new Error("Không thể đọc file"));
     reader.readAsDataURL(file);
   });
@@ -176,8 +193,12 @@ export default function DashboardClient() {
     setBusy(true);
     try {
       const response = await fetch(profile ? `/api/profiles/${profile.id}` : "/api/profiles", { method: profile ? "PATCH" : "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token || ""}` }, body: JSON.stringify(values) });
-      const result = await response.json();
+      const rawResult = await response.text();
+      let result: { profile?: Profile; error?: string };
+      try { result = JSON.parse(rawResult) as { profile?: Profile; error?: string }; }
+      catch { throw new Error(response.status === 413 ? "Dữ liệu quá lớn. Hãy chọn ảnh nhỏ hơn hoặc bỏ bớt file PDF." : `Máy chủ trả về HTTP ${response.status}. Vui lòng tải lại trang rồi thử lại.`); }
       if (!response.ok) throw new Error(result.error || "Không thể lưu hồ sơ");
+      if (!result.profile) throw new Error("Máy chủ không trả về hồ sơ đã lưu");
       setProfile(result.profile);
       setEditing(false);
       setMessage("Đã lưu thông tin hồ sơ.");
